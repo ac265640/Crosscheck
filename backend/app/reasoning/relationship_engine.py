@@ -13,6 +13,7 @@ from pathlib import Path
 
 import google.generativeai as genai
 
+from backend.app.canonicalization.embedder import cosine_similarity, embed_text
 from backend.app.config import DB_PATH, GEMINI_MODEL, GOOGLE_API_KEY
 from backend.app.models.schema import Fact, Relationship, RelationshipResult
 from backend.app.reasoning.prompts import (
@@ -22,13 +23,21 @@ from backend.app.reasoning.prompts import (
 from backend.app.retrieval.hybrid_retriever import find_candidate_facts
 from backend.app.storage.repository import (
     get_document,
+    get_fact,
     get_relationships_for_fact,
     insert_relationship,
     list_facts_for_canonical_key,
+    list_all_facts_with_embeddings,
 )
 from backend.app.tracing.trace_log import log_llm_call
 
-genai.configure(api_key=GOOGLE_API_KEY)
+genai.configure(api_key=GOOGLE_API_KEY, transport="rest")
+
+from backend.app.canonicalization.canonicalizer import is_same_entity
+
+# Minimum cosine similarity required for a near-miss (hybrid-search) candidate
+# to be considered worth reasoning about. Exact canonical-key matches bypass this.
+NEAR_MISS_MIN_SIMILARITY = 0.65
 
 
 def reason_about_fact(
@@ -42,7 +51,12 @@ def reason_about_fact(
     if fact.verification_status == "extraction_failed":
         return []
     if not fact.canonical_key:
-        return []
+        from backend.app.storage.repository import get_fact
+        db_fact = get_fact(fact.id, db_path)
+        if db_fact and db_fact.canonical_key:
+            fact.canonical_key = db_fact.canonical_key
+        else:
+            return []
 
     # Find candidates: same canonical key from OTHER documents
     all_same_key = list_facts_for_canonical_key(fact.canonical_key, db_path)
@@ -51,11 +65,36 @@ def reason_about_fact(
         if f.document_id != fact.document_id and f.id != fact.id
     ]
 
-    # Also include hybrid near-miss candidates
-    near_miss = find_candidate_facts(fact, db_path, exclude_document_id=fact.document_id)
-    candidate_ids = {c.id for c in candidates}
-    for c in near_miss:
-        if c.id not in candidate_ids:
+    # If few exact matches, also include top hybrid near-miss candidates
+    # but only those referring to the same real-world entity and semantically close.
+    if len(candidates) < 2:
+        query_text = f"{fact.entity} {fact.attribute}: {fact.value}"
+        try:
+            query_emb = embed_text(query_text)
+        except Exception:
+            query_emb = None
+
+        near_miss = find_candidate_facts(fact, db_path, top_k=10, exclude_document_id=fact.document_id)
+        candidate_ids = {c.id for c in candidates}
+
+        # Load embeddings for near-miss facts to gate on similarity
+        all_facts_with_emb = {f.id: emb for f, emb in list_all_facts_with_embeddings(db_path)}
+
+        for c in near_miss:
+            if c.id in candidate_ids:
+                continue
+            if len(candidates) >= 3:
+                break
+            # Gate on entity compatibility
+            if not is_same_entity(fact.entity, c.entity):
+                continue
+            # Gate on semantic similarity if embeddings available
+            if query_emb is not None:
+                cand_emb = all_facts_with_emb.get(c.id)
+                if cand_emb is not None:
+                    sim = cosine_similarity(query_emb, cand_emb)
+                    if sim < NEAR_MISS_MIN_SIMILARITY:
+                        continue  # Skip semantically distant facts
             candidates.append(c)
             candidate_ids.add(c.id)
 
@@ -91,8 +130,10 @@ def _call_reasoning_engine(
     doc_a_name = doc_a.filename if doc_a else fact_a.document_id
     doc_b_name = doc_b.filename if doc_b else fact_b.document_id
 
+    from backend.app.config import FALLBACK_MODELS
+    active_model_name = GEMINI_MODEL
     model = genai.GenerativeModel(
-        model_name=GEMINI_MODEL,
+        model_name=active_model_name,
         system_instruction=RELATIONSHIP_REASONING_SYSTEM_PROMPT,
     )
 
@@ -114,7 +155,7 @@ def _call_reasoning_engine(
     )
 
     last_error: str | None = None
-    for attempt in range(2):
+    for attempt in range(3):
         t0 = time.monotonic()
         try:
             response = model.generate_content(
@@ -129,7 +170,7 @@ def _call_reasoning_engine(
 
             log_llm_call(
                 call_type="relationship_reasoning",
-                model=GEMINI_MODEL,
+                model=active_model_name,
                 input_summary=f"{fact_a.id[:8]} vs {fact_b.id[:8]}",
                 output_summary=f"{result.relationship_type} (conf={result.confidence:.2f})",
                 latency_ms=latency_ms,
@@ -150,14 +191,19 @@ def _call_reasoning_engine(
             last_error = str(e)
             log_llm_call(
                 call_type="relationship_reasoning",
-                model=GEMINI_MODEL,
+                model=active_model_name,
                 input_summary=f"{fact_a.id[:8]} vs {fact_b.id[:8]}",
                 output_summary=f"attempt {attempt + 1} failed: {last_error[:80]}",
                 latency_ms=latency_ms,
                 success=False,
             )
             if "429" in last_error or "ResourceExhausted" in last_error:
-                time.sleep(4)
+                active_model_name = FALLBACK_MODELS[(attempt + 1) % len(FALLBACK_MODELS)]
+                model = genai.GenerativeModel(
+                    model_name=active_model_name,
+                    system_instruction=RELATIONSHIP_REASONING_SYSTEM_PROMPT,
+                )
+                time.sleep(2)
                 continue
 
     # Both attempts failed — degrade gracefully

@@ -39,11 +39,36 @@ def reciprocal_rank_fusion(
     return [(fact_map[fid], rrf_scores[fid]) for fid in sorted_ids]
 
 
+_cached_indices: dict = {"bm25": None, "vec": None, "count": -1}
+
+
+def get_cached_indices(db_path: Path = DB_PATH) -> tuple[BM25Index, VectorIndex]:
+    global _cached_indices
+    from backend.app.storage.db import get_connection
+    try:
+        with get_connection(db_path) as conn:
+            row = conn.execute("SELECT count(*) FROM facts").fetchone()
+            count = row[0] if row else 0
+    except Exception:
+        count = 0
+
+    if _cached_indices["bm25"] is None or _cached_indices["count"] != count:
+        bm25 = BM25Index()
+        bm25.build(db_path)
+        vec = VectorIndex()
+        vec.build(db_path)
+        _cached_indices = {"bm25": bm25, "vec": vec, "count": count}
+
+    return _cached_indices["bm25"], _cached_indices["vec"]
+
+
 def find_candidate_facts(
     query_fact: Fact,
     db_path: Path = DB_PATH,
-    top_k: int = 20,
+    top_k: int = 10,
     exclude_document_id: str | None = None,
+    bm25_index: BM25Index | None = None,
+    vector_index: VectorIndex | None = None,
 ) -> list[Fact]:
     """
     Find candidate facts to compare against query_fact.
@@ -63,14 +88,13 @@ def find_candidate_facts(
                 candidates[fact.id] = fact
 
     # Step 2: Hybrid retrieval for near-miss matches
+    if bm25_index is None or vector_index is None:
+        bm25, vec = get_cached_indices(db_path)
+    else:
+        bm25, vec = bm25_index, vector_index
+
     query_sentence = _fact_to_sentence(query_fact)
-
-    bm25 = BM25Index()
-    bm25.build(db_path)
     bm25_results = bm25.query(query_sentence, top_k=top_k)
-
-    vec = VectorIndex()
-    vec.build(db_path)
     vec_results = vec.query(query_sentence, top_k=top_k)
 
     hybrid = reciprocal_rank_fusion(bm25_results, vec_results)

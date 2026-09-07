@@ -1,12 +1,13 @@
 """
 Pydantic data models for the Fact Knowledge Layer system.
 Implements the exact schema from the assignment spec (section 4).
+Python 3.9-compatible: uses Optional[...] and Tuple[...] from typing.
 """
 
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Literal
+from typing import Dict, List, Literal, Optional, Tuple
 
 from pydantic import BaseModel, Field
 
@@ -22,9 +23,9 @@ class Chunk(BaseModel):
     id: str
     document_id: str
     page_number: int
-    bbox: tuple[float, float, float, float] | None = None
+    bbox: Optional[Tuple[float, float, float, float]] = None
     text: str
-    section_title: str | None = None  # from section-aware chunking, may be None
+    section_title: Optional[str] = None  # from section-aware chunking, may be None
 
 
 class Fact(BaseModel):
@@ -34,12 +35,12 @@ class Fact(BaseModel):
     entity: str                      # e.g. "Delhivery Limited", free text, LLM-proposed
     attribute: str                   # e.g. "revenue from services", free text, LLM-proposed
     value: str                       # keep as string; normalize downstream, don't force numeric
-    unit: str | None = None          # e.g. "INR crore", "%", None for non-numeric facts
-    scope: dict = Field(default_factory=dict)  # free-form: {"period": "FY24", "basis": "consolidated", ...}
+    unit: Optional[str] = None       # e.g. "INR crore", "%", None for non-numeric facts
+    scope: Dict = Field(default_factory=dict)  # free-form: {"period": "FY24", "basis": "consolidated", ...}
     verbatim_evidence: str           # exact quote, must appear in chunk text (verified)
     page_number: int
-    bbox: tuple[float, float, float, float] | None = None
-    canonical_key: str | None = None  # filled in by canonicalization step
+    bbox: Optional[Tuple[float, float, float, float]] = None
+    canonical_key: Optional[str] = None  # filled in by canonicalization step
     confidence: float = 1.0          # combination of extraction + verification confidence
     verification_status: Literal["verified", "unverified", "extraction_failed"] = "unverified"
 
@@ -63,8 +64,8 @@ class ExtractedFact(BaseModel):
     entity: str
     attribute: str
     value: str
-    unit: str | None = None
-    scope: dict = Field(default_factory=dict)
+    unit: Optional[str] = None
+    scope: Dict = Field(default_factory=dict)
     verbatim_evidence: str
 
 
@@ -92,14 +93,14 @@ class DocumentSummary(BaseModel):
     failed_count: int
 
 
-class FactWithRelationships(BaseModel):
-    fact: Fact
-    relationships: list[RelationshipDetail]
-
-
 class RelationshipDetail(BaseModel):
     relationship: Relationship
     linked_fact: Fact
+
+
+class FactWithRelationships(BaseModel):
+    fact: Fact
+    relationships: List[RelationshipDetail]
 
 
 class TraceEntry(BaseModel):

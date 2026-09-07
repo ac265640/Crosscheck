@@ -1,122 +1,146 @@
 [
   {
-    "entity": "Delhivery Limited",
-    "attribute": "revenue from services",
-    "value": "6,888",
-    "unit": "INR crore",
-    "scope": {"period": "FY23", "basis": "consolidated"},
-    "canonical_key_hint": "delhivery_revenue_fy23"
+    "entity": "Delhivery",
+    "attribute": "Revenue from customers",
+    "value": "8,142",
+    "unit": "₹ Cr",
+    "scope": {"period": "FY24"},
+    "canonical_key_hint": "delhivery_revenue_customers_fy24"
   },
   {
-    "entity": "Delhivery Limited",
-    "attribute": "number of customers served",
+    "entity": "Delhivery",
+    "attribute": "Revenue from customers",
+    "value": "7,225",
+    "unit": "₹ Cr",
+    "scope": {"period": "FY23"},
+    "canonical_key_hint": "delhivery_revenue_customers_fy23"
+  },
+  {
+    "entity": "Delhivery",
+    "attribute": "number of Active Customers",
     "value": "23,113",
     "unit": null,
-    "scope": {"period": "FY23"},
-    "canonical_key_hint": "delhivery_customers_fy23"
+    "scope": {"period": "nine months ended December 31, 2021"},
+    "canonical_key_hint": "delhivery_active_customers_2021"
   },
   {
-    "entity": "Delhivery Limited",
-    "attribute": "shipments delivered",
-    "value": "1,420",
-    "unit": "million",
-    "scope": {"period": "FY23"},
-    "canonical_key_hint": "delhivery_shipments_fy23"
+    "entity": "Delhivery",
+    "attribute": "active customers count",
+    "value": "33,000",
+    "unit": null,
+    "scope": {"as_of": "March 31, 2024"},
+    "canonical_key_hint": "delhivery_active_customers_2024"
   },
   {
-    "entity": "Delhivery Limited",
-    "attribute": "adjusted EBITDA margin",
-    "value": "2.2",
+    "entity": "Delhivery",
+    "attribute": "EBITDA margin",
+    "value": "2.2%",
     "unit": "%",
     "scope": {"period": "Q4 FY24"},
     "canonical_key_hint": "delhivery_ebitda_margin_q4fy24"
   },
   {
-    "entity": "Delhivery Limited",
-    "attribute": "service express parcel delivery share",
-    "value": "21.7",
-    "unit": "%",
+    "entity": "Delhivery",
+    "attribute": "Express parcel shipment volume",
+    "value": "740",
+    "unit": "million",
+    "scope": {"period": "FY24"},
+    "canonical_key_hint": "delhivery_express_parcel_fy24"
+  },
+  {
+    "entity": "Delhivery",
+    "attribute": "Express parcel shipment volume",
+    "value": "663",
+    "unit": "million",
+    "scope": {"period": "FY23"},
+    "canonical_key_hint": "delhivery_express_parcel_fy23"
+  },
+  {
+    "entity": "Delhivery",
+    "attribute": "fully and semi-automated sortation centres",
+    "value": "21",
+    "unit": "centres",
+    "scope": {"as_of": "December 31, 2021"},
+    "canonical_key_hint": "delhivery_sort_centres_2021"
+  },
+  {
+    "entity": "Delhivery",
+    "attribute": "fully and semi automated sortation centres count",
+    "value": "29",
+    "unit": null,
+    "scope": {"as_of": "March 31, 2024"},
+    "canonical_key_hint": "delhivery_sort_centres_2024"
+  },
+  {
+    "entity": "Delhivery",
+    "attribute": "Rated Automated Sort Capacity",
+    "value": "3.70 million",
+    "unit": "shipments per day",
+    "scope": {"as_of": "December 31, 2021"},
+    "canonical_key_hint": "delhivery_sort_capacity_2021"
+  },
+  {
+    "entity": "Delhivery",
+    "attribute": "Rated Automated Sort Capacity",
+    "value": "7.1 million",
+    "unit": "shipments per day",
+    "scope": {"as_of": "March 31, 2024"},
+    "canonical_key_hint": "delhivery_sort_capacity_2024"
+  },
+  {
+    "entity": "Delhivery",
+    "attribute": "gateways",
+    "value": "82",
+    "unit": "gateways",
+    "scope": {"as_of": "December 31, 2021"},
+    "canonical_key_hint": "delhivery_gateways_2021"
+  },
+  {
+    "entity": "Delhivery",
+    "attribute": "number of gateways",
+    "value": "123",
+    "unit": null,
     "scope": {"period": "Q4 FY24"},
-    "canonical_key_hint": "delhivery_express_parcel_share"
+    "canonical_key_hint": "delhivery_gateways_2024"
   },
   {
     "entity": "India",
-    "attribute": "real GDP growth rate",
+    "attribute": "real GDP growth rate estimate",
     "value": "6.4",
     "unit": "%",
-    "scope": {"period": "FY25", "estimate_type": "actual"},
+    "scope": {"period": "FY25"},
     "canonical_key_hint": "india_gdp_growth_fy25"
   },
   {
     "entity": "India",
-    "attribute": "consumer price inflation (CPI)",
-    "value": "4.9",
-    "unit": "%",
-    "scope": {"period": "FY25"},
-    "canonical_key_hint": "india_cpi_fy25"
+    "attribute": "foreign exchange reserves",
+    "value": "640.3",
+    "unit": "USD billion",
+    "scope": {"as_of": "end of December 2024"},
+    "canonical_key_hint": "india_forex_reserves_dec2024"
   },
   {
     "entity": "India",
     "attribute": "current account deficit as percent of GDP",
-    "value": "1.1",
+    "value": "1.2",
     "unit": "%",
-    "scope": {"period": "FY25"},
-    "canonical_key_hint": "india_cad_pct_gdp_fy25"
-  },
-  {
-    "entity": "Reserve Bank of India",
-    "attribute": "repo rate",
-    "value": "6.25",
-    "unit": "%",
-    "scope": {"as_of": "March 2025"},
-    "canonical_key_hint": "rbi_repo_rate_march2025"
+    "scope": {"period": "Q2 of FY25"},
+    "canonical_key_hint": "india_cad_q2_fy25"
   },
   {
     "entity": "India",
-    "attribute": "fiscal deficit as percent of GDP",
-    "value": "4.8",
+    "attribute": "current account deficit as percent of GDP",
+    "value": "1.3",
     "unit": "%",
-    "scope": {"period": "FY25", "basis": "central government"},
-    "canonical_key_hint": "india_fiscal_deficit_fy25"
+    "scope": {"period": "Q2 of FY24"},
+    "canonical_key_hint": "india_cad_q2_fy24"
   },
   {
     "entity": "India",
-    "attribute": "foreign exchange reserves",
-    "value": "640",
+    "attribute": "merchandise trade deficit",
+    "value": "75.3",
     "unit": "USD billion",
-    "scope": {"as_of": "March 2025"},
-    "canonical_key_hint": "india_forex_reserves_march2025"
-  },
-  {
-    "entity": "Delhivery Limited",
-    "attribute": "net revenue from operations",
-    "value": "7,225",
-    "unit": "INR crore",
-    "scope": {"period": "FY24", "basis": "consolidated"},
-    "canonical_key_hint": "delhivery_revenue_fy24"
-  },
-  {
-    "entity": "Delhivery Limited",
-    "attribute": "part truckload (PTL) freight volumes",
-    "value": "3.11",
-    "unit": "million tonnes",
-    "scope": {"period": "Q4 FY24"},
-    "canonical_key_hint": "delhivery_ptl_volume_q4fy24"
-  },
-  {
-    "entity": "India",
-    "attribute": "GDP growth rate forecast",
-    "value": "6.5",
-    "unit": "%",
-    "scope": {"period": "FY26", "estimate_type": "projected"},
-    "canonical_key_hint": "india_gdp_growth_fy26_forecast"
-  },
-  {
-    "entity": "Reserve Bank of India",
-    "attribute": "CRR (Cash Reserve Ratio)",
-    "value": "4.0",
-    "unit": "%",
-    "scope": {"as_of": "2024"},
-    "canonical_key_hint": "rbi_crr_2024"
+    "scope": {"period": "Q2 of FY25"},
+    "canonical_key_hint": "india_trade_deficit_q2_fy25"
   }
 ]

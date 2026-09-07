@@ -3,6 +3,8 @@ Prompts for the relationship reasoning engine.
 Verbatim from Appendix C of the spec.
 """
 
+from __future__ import annotations
+
 RELATIONSHIP_REASONING_SYSTEM_PROMPT = """You are a fact-reconciliation analyst. You will be given two facts extracted
 from documents, both mapped to the same canonical concept, along with their
 full verbatim evidence, source document names, and scope metadata. Decide how

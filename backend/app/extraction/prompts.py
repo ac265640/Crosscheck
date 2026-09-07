@@ -4,6 +4,8 @@ These are verbatim from Appendix A of the spec.
 Only modify these if a concrete failure mode is observed — document any changes in docs/decisions.md.
 """
 
+from __future__ import annotations
+
 FACT_EXTRACTION_SYSTEM_PROMPT = """You are a fact-extraction engine for a fact knowledge layer system. You will be
 given a chunk of text extracted from a page of a PDF document, along with its
 section title (if known), page number, and source document name. Your job is

@@ -8,8 +8,8 @@ A system that ingests arbitrary PDFs, extracts factual claims with grounded evid
 
 ### Prerequisites
 
-- Python 3.11+
-- A Google Gemini API key
+- Python 3.9+
+- A Google Gemini API key (`GOOGLE_API_KEY`)
 
 ### Install
 
@@ -38,13 +38,23 @@ This starts:
 
 ### Seed the demo dataset
 
-In a separate terminal (after the servers are running):
+We provide two seeding scripts:
+
+**Option A — Direct (recommended, bypasses HTTP timeouts for large PDFs):**
+
+```bash
+python scripts/seed_direct.py
+```
+
+This runs the full pipeline in-process without an HTTP timeout limit. Processes all 6 starter PDFs.
+
+**Option B — via HTTP API (requires backend running):**
 
 ```bash
 python scripts/seed_demo.py
 ```
 
-This ingests all 6 starter PDFs through the full pipeline and populates the database for demo.
+Uses a 300-second HTTP timeout per document. Suitable for smaller PDFs.
 
 ### Evaluate
 

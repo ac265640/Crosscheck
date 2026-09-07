@@ -12,19 +12,20 @@ from pathlib import Path
 from backend.app.config import DB_PATH
 
 
-def get_connection(db_path: Path = DB_PATH) -> sqlite3.Connection:
+def get_connection(db_path: Path | str = DB_PATH) -> sqlite3.Connection:
     """Return a SQLite connection with foreign keys enabled and row_factory set."""
-    db_path.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(str(db_path), check_same_thread=False)
+    path = Path(db_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(str(path), check_same_thread=False, timeout=60.0)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     conn.execute("PRAGMA journal_mode = WAL")
     return conn
 
 
-def init_db(db_path: Path = DB_PATH) -> None:
+def init_db(db_path: Path | str = DB_PATH) -> None:
     """Create all tables if they don't exist. Safe to call multiple times."""
-    conn = get_connection(db_path)
+    conn = get_connection(Path(db_path))
     with conn:
         conn.executescript(
             """

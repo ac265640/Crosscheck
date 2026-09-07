@@ -66,6 +66,35 @@ def document_exists(filename: str, db_path: Path = DB_PATH) -> bool:
     return row is not None
 
 
+def get_document_by_filename(filename: str, db_path: Path = DB_PATH) -> Optional[Document]:
+    conn = get_connection(db_path)
+    row = conn.execute("SELECT * FROM documents WHERE filename = ?", (filename,)).fetchone()
+    conn.close()
+    if row is None:
+        return None
+    return Document(
+        id=row["id"],
+        filename=row["filename"],
+        uploaded_at=datetime.fromisoformat(row["uploaded_at"]),
+        page_count=row["page_count"],
+    )
+
+
+def delete_document(doc_id: str, db_path: Path = DB_PATH) -> None:
+    conn = get_connection(db_path)
+    with conn:
+        conn.execute(
+            """DELETE FROM relationships 
+               WHERE fact_id_a IN (SELECT id FROM facts WHERE document_id = ?)
+                  OR fact_id_b IN (SELECT id FROM facts WHERE document_id = ?)""",
+            (doc_id, doc_id),
+        )
+        conn.execute("DELETE FROM facts WHERE document_id = ?", (doc_id,))
+        conn.execute("DELETE FROM chunks WHERE document_id = ?", (doc_id,))
+        conn.execute("DELETE FROM documents WHERE id = ?", (doc_id,))
+    conn.close()
+
+
 # ── Chunks ─────────────────────────────────────────────────────────────────────
 
 def insert_chunk(chunk: Chunk, db_path: Path = DB_PATH) -> None:

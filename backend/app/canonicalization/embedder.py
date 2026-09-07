@@ -18,7 +18,10 @@ _model: SentenceTransformer | None = None
 def get_embedder() -> SentenceTransformer:
     global _model
     if _model is None:
-        _model = SentenceTransformer(EMBEDDING_MODEL)
+        try:
+            _model = SentenceTransformer(EMBEDDING_MODEL, local_files_only=True)
+        except Exception:
+            _model = SentenceTransformer(EMBEDDING_MODEL)
     return _model
 
 

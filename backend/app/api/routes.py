@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import io
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
@@ -16,7 +17,7 @@ from fastapi.responses import Response, StreamingResponse
 
 from backend.app.canonicalization.canonicalizer import canonicalize_fact
 from backend.app.canonicalization.embedder import embed_text
-from backend.app.config import DB_PATH
+from backend.app.config import DB_PATH, PROJECT_ROOT
 from backend.app.extraction.fact_extractor import extract_facts_from_chunk
 from backend.app.guardrails.evidence_verifier import verify_fact_evidence
 from backend.app.ingestion.chunker import chunk_document
@@ -55,8 +56,8 @@ router = APIRouter()
 # Ensure DB is initialized on import
 init_db(DB_PATH)
 
-# Temp upload dir
-_UPLOAD_DIR = Path("data/uploads")
+# Temp upload dir — absolute path so it works regardless of uvicorn cwd
+_UPLOAD_DIR = PROJECT_ROOT / "data" / "uploads"
 _UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 
@@ -120,13 +121,17 @@ async def upload_document(file: UploadFile = File(...)):
     # Build chunk_text_map for verification
     chunk_text_map = {c.id: c.text for c in all_chunks}
 
-    # Extract facts per chunk
+    # Extract facts per chunk concurrently
     all_facts: list[Fact] = []
-    for chunk in all_chunks:
-        facts = extract_facts_from_chunk(chunk, file.filename)
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        chunk_facts_list = list(
+            executor.map(lambda c: extract_facts_from_chunk(c, file.filename), all_chunks)
+        )
+
+    for facts in chunk_facts_list:
         for fact in facts:
             # Verify evidence
-            fact = verify_fact_evidence(fact, chunk_text_map.get(chunk.id, ""))
+            fact = verify_fact_evidence(fact, chunk_text_map.get(fact.chunk_id, ""))
             # Embed and insert
             if fact.verification_status != "extraction_failed":
                 emb = embed_text(f"{fact.entity} {fact.attribute}: {fact.value}")
@@ -140,14 +145,15 @@ async def upload_document(file: UploadFile = File(...)):
         if fact.verification_status != "extraction_failed":
             chunk = get_chunk(fact.chunk_id, DB_PATH)
             chunk_text = chunk.text if chunk else ""
-            canonicalize_fact(fact, chunk_text)
+            fact.canonical_key = canonicalize_fact(fact, chunk_text)
 
-    # Relationship reasoning (against existing store)
+    # Relationship reasoning (against existing store) concurrently
     new_relationships: list[Relationship] = []
-    for fact in all_facts:
-        if fact.verification_status != "extraction_failed":
-            rels = reason_about_fact(fact, DB_PATH)
-            new_relationships.extend(rels)
+    valid_facts = [f for f in all_facts if f.verification_status != "extraction_failed"]
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        rel_lists = list(executor.map(lambda f: reason_about_fact(f, DB_PATH), valid_facts))
+    for rels in rel_lists:
+        new_relationships.extend(rels)
 
     counts = count_facts_for_document(doc_id, DB_PATH)
     return {

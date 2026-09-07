@@ -8,16 +8,27 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+# Disable gRPC fork support to avoid deadlocks on macOS / multithreaded servers
+os.environ["GRPC_ENABLE_FORK_SUPPORT"] = "0"
+
 from dotenv import load_dotenv
 
-# Load .env from the project root (two levels up from this file)
-_project_root = Path(__file__).resolve().parents[2]
-load_dotenv(_project_root / ".env")
+# Project root (two levels up from this file: backend/app/config.py → project root)
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+load_dotenv(PROJECT_ROOT / ".env")
 
 
 # ── Google Gemini ──────────────────────────────────────────────────────────────
 GOOGLE_API_KEY: str = os.getenv("GOOGLE_API_KEY", "")
-GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite-preview-06-17")
+# Fallback chain: if primary model hits quota (429), try these in order
+# All must be valid Gemini model IDs; configurable via env
+_fallback_env = os.getenv("FALLBACK_MODELS", "")
+FALLBACK_MODELS: list[str] = (
+    [m.strip() for m in _fallback_env.split(",") if m.strip()]
+    if _fallback_env
+    else [GEMINI_MODEL, "gemini-2.0-flash", "gemini-1.5-flash"]
+)
 
 # ── Embedding model (local, CPU) ───────────────────────────────────────────────
 EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "BAAI/bge-small-en-v1.5")
@@ -35,10 +46,10 @@ EVIDENCE_VERIFICATION_THRESHOLD: int = int(os.getenv("EVIDENCE_VERIFICATION_THRE
 
 # ── Storage ────────────────────────────────────────────────────────────────────
 _raw_db = Path(os.getenv("DB_PATH", "data/factstore.db"))
-DB_PATH: Path = _raw_db if _raw_db.is_absolute() else (_project_root / _raw_db).resolve()
+DB_PATH: Path = _raw_db if _raw_db.is_absolute() else (PROJECT_ROOT / _raw_db).resolve()
 
 _raw_trace = Path(os.getenv("TRACE_LOG_PATH", "data/traces.jsonl"))
-TRACE_LOG_PATH: Path = _raw_trace if _raw_trace.is_absolute() else (_project_root / _raw_trace).resolve()
+TRACE_LOG_PATH: Path = _raw_trace if _raw_trace.is_absolute() else (PROJECT_ROOT / _raw_trace).resolve()
 
 # ── Server ─────────────────────────────────────────────────────────────────────
 BACKEND_HOST: str = os.getenv("BACKEND_HOST", "0.0.0.0")

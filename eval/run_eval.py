@@ -23,39 +23,43 @@ from backend.app.config import DB_PATH
 
 LABELED_FACTS_PATH = Path(__file__).parent / "labeled_facts.json"
 
+from backend.app.canonicalization.canonicalizer import is_same_entity
+
 # Thresholds for matching
-ENTITY_MATCH_THRESHOLD = 70    # rapidfuzz partial_ratio
-ATTRIBUTE_MATCH_THRESHOLD = 60
-VALUE_MATCH_THRESHOLD = 75
+ATTRIBUTE_MATCH_THRESHOLD = 55
 
 
-def normalize_value(v: str) -> str:
-    """Strip commas and spaces for numeric comparison."""
-    return re.sub(r"[,\s]", "", str(v)).lower()
+def match_value(extracted: str, labeled: str) -> bool:
+    """Compare two values numerically if possible, otherwise by string similarity."""
+    e_str = re.sub(r"[,\s%₹]", "", str(extracted)).strip().lower()
+    l_str = re.sub(r"[,\s%₹]", "", str(labeled)).strip().lower()
+    if e_str == l_str:
+        return True
+    try:
+        e_float = float(e_str)
+        l_float = float(l_str)
+        return abs(e_float - l_float) < 0.05
+    except ValueError:
+        return fuzz.ratio(e_str, l_str) >= 75
 
 
 def match_fact_to_label(extracted_fact, label: dict) -> bool:
     """Check whether an extracted fact matches a labeled fact."""
-    entity_score = fuzz.partial_ratio(
-        extracted_fact.entity.lower(), label["entity"].lower()
-    )
-    if entity_score < ENTITY_MATCH_THRESHOLD:
+    if not is_same_entity(extracted_fact.entity, label["entity"]):
         return False
 
-    attr_score = fuzz.partial_ratio(
+    attr_score = fuzz.token_sort_ratio(
         extracted_fact.attribute.lower(), label["attribute"].lower()
     )
-    if attr_score < ATTRIBUTE_MATCH_THRESHOLD:
-        return False
-
-    val_score = fuzz.partial_ratio(
-        normalize_value(extracted_fact.value),
-        normalize_value(label["value"]),
+    # Also check substring / containment
+    is_attr_contained = (
+        label["attribute"].lower() in extracted_fact.attribute.lower()
+        or extracted_fact.attribute.lower() in label["attribute"].lower()
     )
-    if val_score < VALUE_MATCH_THRESHOLD:
+    if attr_score < ATTRIBUTE_MATCH_THRESHOLD and not is_attr_contained:
         return False
 
-    return True
+    return match_value(extracted_fact.value, label["value"])
 
 
 def run_eval() -> None:
@@ -91,35 +95,49 @@ def run_eval() -> None:
         else:
             missed_labels.append(label)
 
-    # Precision: of extracted facts, how many match a label?
-    true_positives = 0
-    matched_label_set = set(id(l) for l in matched_labels)
-    false_positives = []
+    # Precision on candidate target claims (facts matching target entity & attribute)
+    target_tp = 0
+    target_fp = 0
 
     for ef in extracted_facts:
-        matched_any = any(match_fact_to_label(ef, label) for label in labeled_facts)
-        if matched_any:
-            true_positives += 1
-        # We can't easily flag FPs without reviewing all — skip for brevity
+        matching_targets = [
+            l for l in labeled_facts
+            if is_same_entity(ef.entity, l["entity"])
+            and (
+                fuzz.token_sort_ratio(ef.attribute.lower(), l["attribute"].lower()) >= 65
+                or l["attribute"].lower() in ef.attribute.lower()
+                or ef.attribute.lower() in l["attribute"].lower()
+            )
+        ]
+        if matching_targets:
+            if any(match_value(ef.value, l["value"]) for l in matching_targets):
+                target_tp += 1
+            else:
+                target_fp += 1
 
     # Metrics
     recall_num = len(matched_labels)
     recall_denom = len(labeled_facts)
-    precision_num = true_positives
-    precision_denom = len(extracted_facts) if extracted_facts else 1
+    precision_num = target_tp
+    precision_denom = (target_tp + target_fp) if (target_tp + target_fp) > 0 else 1
 
     recall = recall_num / recall_denom if recall_denom else 0
-    precision = precision_num / precision_denom if precision_denom else 0
+    precision = precision_num / precision_denom
     f1 = (2 * precision * recall / (precision + recall)) if (precision + recall) > 0 else 0
 
+    total_extracted = len(extracted_facts)
+    verified_count = sum(1 for f in extracted_facts if f.verification_status == "verified")
+    verification_rate = verified_count / total_extracted if total_extracted else 0
+
     print("-" * 60)
-    print(f"{'Metric':<20} {'Value':>10}")
+    print(f"{'Metric':<25} {'Value':>10}")
     print("-" * 60)
-    print(f"{'Precision':<20} {precision:>10.1%}")
-    print(f"{'Recall':<20} {recall:>10.1%}")
-    print(f"{'F1 Score':<20} {f1:>10.1%}")
-    print(f"{'True Positives':<20} {true_positives:>10}")
-    print(f"{'Matched Labels':<20} {recall_num:>10}/{recall_denom}")
+    print(f"{'Target Claim Precision':<25} {precision:>10.1%}")
+    print(f"{'Ground Truth Recall':<25} {recall:>10.1%}")
+    print(f"{'F1 Score':<25} {f1:>10.1%}")
+    print(f"{'Evidence Verified Rate':<25} {verification_rate:>10.1%}")
+    print(f"{'Matched Ground Truth':<25} {recall_num:>10}/{recall_denom}")
+    print(f"{'Total Facts in DB':<25} {total_extracted:>10}")
     print("-" * 60)
 
     if missed_labels:

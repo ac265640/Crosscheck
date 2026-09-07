@@ -23,8 +23,8 @@ from backend.app.extraction.prompts import (
 from backend.app.models.schema import Chunk, ExtractedFact, Fact
 from backend.app.tracing.trace_log import log_llm_call
 
-# Configure Gemini
-genai.configure(api_key=GOOGLE_API_KEY)
+# Configure Gemini with REST transport to avoid gRPC deadlocks
+genai.configure(api_key=GOOGLE_API_KEY, transport="rest")
 
 _BOILERPLATE_PATTERNS = [
     r"(?i)safe\s+harbor",
@@ -73,21 +73,23 @@ def extract_facts_from_chunk(
     if _is_boilerplate(chunk.text):
         return []
 
+    from backend.app.config import FALLBACK_MODELS
+    active_model_name = GEMINI_MODEL
     model = genai.GenerativeModel(
-        model_name=GEMINI_MODEL,
+        model_name=active_model_name,
         system_instruction=FACT_EXTRACTION_SYSTEM_PROMPT,
     )
 
     last_error: Optional[str] = None
     raw_output: Optional[str] = None
 
-    for attempt in range(2):
+    for attempt in range(3):
         user_message = build_extraction_user_message(
             document_filename=document_filename,
             section_title=chunk.section_title,
             page_number=chunk.page_number,
             chunk_text=chunk.text,
-            validation_error=last_error if attempt > 0 else None,
+            validation_error=last_error if (attempt > 0 and "429" not in str(last_error)) else None,
         )
 
         t0 = time.monotonic()
@@ -106,7 +108,7 @@ def extract_facts_from_chunk(
 
             log_llm_call(
                 call_type="fact_extraction",
-                model=GEMINI_MODEL,
+                model=active_model_name,
                 input_summary=f"chunk {chunk.id[:8]} page {chunk.page_number} ({len(chunk.text)} chars)",
                 output_summary=f"{len(facts)} facts extracted",
                 latency_ms=latency_ms,
@@ -119,14 +121,14 @@ def extract_facts_from_chunk(
             last_error = str(e)
             log_llm_call(
                 call_type="fact_extraction",
-                model=GEMINI_MODEL,
+                model=active_model_name,
                 input_summary=f"chunk {chunk.id[:8]} page {chunk.page_number}",
                 output_summary=f"attempt {attempt + 1} failed: {last_error[:100]}",
                 latency_ms=latency_ms,
                 success=False,
             )
-            if attempt == 1:
-                # Both attempts failed — return a single extraction_failed fact
+            if attempt >= 1:
+                # Both schema attempts failed — return a single extraction_failed fact
                 failed_fact = Fact(
                     id=str(uuid.uuid4()),
                     document_id=chunk.document_id,
@@ -150,14 +152,20 @@ def extract_facts_from_chunk(
             last_error = str(e)
             log_llm_call(
                 call_type="fact_extraction",
-                model=GEMINI_MODEL,
+                model=active_model_name,
                 input_summary=f"chunk {chunk.id[:8]}",
                 output_summary=f"API error: {last_error[:100]}",
                 latency_ms=latency_ms,
                 success=False,
             )
             if "429" in last_error or "ResourceExhausted" in last_error:
-                time.sleep(4)
+                # Switch to next fallback model and retry
+                active_model_name = FALLBACK_MODELS[(attempt + 1) % len(FALLBACK_MODELS)]
+                model = genai.GenerativeModel(
+                    model_name=active_model_name,
+                    system_instruction=FACT_EXTRACTION_SYSTEM_PROMPT,
+                )
+                time.sleep(2)
                 continue
             break
 

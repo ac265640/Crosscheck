@@ -47,7 +47,7 @@ def parse_pdf(pdf_path: Path) -> tuple[list[ParsedPage], int]:
         page_number = page_idx + 1
 
         spans: list[TextSpan] = []
-        blocks = page.get_text("rawdict", flags=fitz.TEXT_PRESERVE_WHITESPACE)["blocks"]
+        blocks = page.get_text("dict", flags=fitz.TEXT_PRESERVE_WHITESPACE)["blocks"]
 
         for block in blocks:
             if block.get("type") != 0:  # type 0 = text block

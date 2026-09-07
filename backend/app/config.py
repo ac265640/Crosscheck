@@ -17,7 +17,7 @@ load_dotenv(_project_root / ".env")
 
 # ── Google Gemini ──────────────────────────────────────────────────────────────
 GOOGLE_API_KEY: str = os.getenv("GOOGLE_API_KEY", "")
-GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
 # ── Embedding model (local, CPU) ───────────────────────────────────────────────
 EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "BAAI/bge-small-en-v1.5")
@@ -34,8 +34,11 @@ CANON_TIEBREAK_THRESHOLD: float = float(os.getenv("CANON_TIEBREAK_THRESHOLD", "0
 EVIDENCE_VERIFICATION_THRESHOLD: int = int(os.getenv("EVIDENCE_VERIFICATION_THRESHOLD", "85"))
 
 # ── Storage ────────────────────────────────────────────────────────────────────
-DB_PATH: Path = Path(os.getenv("DB_PATH", "data/factstore.db"))
-TRACE_LOG_PATH: Path = Path(os.getenv("TRACE_LOG_PATH", "data/traces.jsonl"))
+_raw_db = Path(os.getenv("DB_PATH", "data/factstore.db"))
+DB_PATH: Path = _raw_db if _raw_db.is_absolute() else (_project_root / _raw_db).resolve()
+
+_raw_trace = Path(os.getenv("TRACE_LOG_PATH", "data/traces.jsonl"))
+TRACE_LOG_PATH: Path = _raw_trace if _raw_trace.is_absolute() else (_project_root / _raw_trace).resolve()
 
 # ── Server ─────────────────────────────────────────────────────────────────────
 BACKEND_HOST: str = os.getenv("BACKEND_HOST", "0.0.0.0")
@@ -43,7 +46,6 @@ BACKEND_PORT: int = int(os.getenv("BACKEND_PORT", "8000"))
 FRONTEND_PORT: int = int(os.getenv("FRONTEND_PORT", "8501"))
 
 # Ensure data directory exists
-(DB_PATH.parent if not DB_PATH.parent.exists() else DB_PATH.parent).mkdir(
-    parents=True, exist_ok=True
-)
+DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 TRACE_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+

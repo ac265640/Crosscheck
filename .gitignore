@@ -57,3 +57,7 @@ htmlcov/
 
 # Logs
 *.log
+
+# Assignment archive and brief
+*.zip
+superjoin-vit-2026-assignment.pdf

@@ -156,6 +156,9 @@ def extract_facts_from_chunk(
                 latency_ms=latency_ms,
                 success=False,
             )
+            if "429" in last_error or "ResourceExhausted" in last_error:
+                time.sleep(4)
+                continue
             break
 
     return []

@@ -156,6 +156,9 @@ def _call_reasoning_engine(
                 latency_ms=latency_ms,
                 success=False,
             )
+            if "429" in last_error or "ResourceExhausted" in last_error:
+                time.sleep(4)
+                continue
 
     # Both attempts failed — degrade gracefully
     return Relationship(

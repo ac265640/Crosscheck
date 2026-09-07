@@ -105,12 +105,12 @@ async def upload_document(file: UploadFile = File(...)):
     section_map = build_section_map_from_pages(pages)
 
     # Extract tables
-    table_chunks, table_page_numbers = extract_tables_from_pdf(
+    table_chunks, table_bboxes = extract_tables_from_pdf(
         pdf_path, doc_id, section_map
     )
 
-    # Text chunking (skips table pages)
-    text_chunks = chunk_document(pages, doc_id, table_page_numbers)
+    # Text chunking (skips spans inside table regions)
+    text_chunks = chunk_document(pages, doc_id, table_bboxes)
     all_chunks = text_chunks + table_chunks
 
     # Insert chunks

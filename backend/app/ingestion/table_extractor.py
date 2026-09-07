@@ -19,12 +19,12 @@ def extract_tables_from_pdf(
     pdf_path: Path,
     document_id: str,
     section_map: Optional[dict[int, str]] = None,
-) -> tuple[list[Chunk], set[int]]:
+) -> tuple[list[Chunk], dict[int, list[tuple[float, float, float, float]]]]:
     """
     Detect tables in a PDF using pdfplumber.
     Returns:
-      - list of Chunk objects (one per table, markdown-formatted)
-      - set of page numbers that contain tables (1-indexed)
+      - list of Chunk objects (one per table, markdown-formatted, with exact bbox)
+      - dict mapping page_number -> list of table bounding boxes
     
     section_map: {page_number -> section_title} from the chunker's section detection.
     """
@@ -32,39 +32,40 @@ def extract_tables_from_pdf(
         section_map = {}
 
     table_chunks: list[Chunk] = []
-    table_page_numbers: set[int] = set()
+    table_bboxes_by_page: dict[int, list[tuple[float, float, float, float]]] = {}
 
     with pdfplumber.open(str(pdf_path)) as pdf:
         for page_idx, page in enumerate(pdf.pages):
             page_number = page_idx + 1
-            tables = page.extract_tables()
+            found_tables = page.find_tables()
 
-            if not tables:
+            if not found_tables:
                 continue
 
-            for table in tables:
-                if not table or not any(any(cell for cell in row) for row in table):
+            for t in found_tables:
+                table_data = t.extract()
+                if not table_data or len(table_data) < 2 or max(len(r) for r in table_data) < 2:
                     continue
 
-                table_page_numbers.add(page_number)
-                markdown_table = _table_to_markdown(table)
-
+                markdown_table = _table_to_markdown(table_data)
                 if not markdown_table.strip():
                     continue
 
+                bbox = tuple(float(x) for x in t.bbox)
+                table_bboxes_by_page.setdefault(page_number, []).append(bbox)
                 section_title = section_map.get(page_number)
 
                 chunk = Chunk(
                     id=str(uuid.uuid4()),
                     document_id=document_id,
                     page_number=page_number,
-                    bbox=None,  # pdfplumber doesn't easily expose full table bbox here
+                    bbox=bbox,
                     text=markdown_table,
                     section_title=section_title or "Table",
                 )
                 table_chunks.append(chunk)
 
-    return table_chunks, table_page_numbers
+    return table_chunks, table_bboxes_by_page
 
 
 def _table_to_markdown(table: list[list[Optional[str]]]) -> str:

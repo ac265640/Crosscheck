@@ -56,33 +56,33 @@ class SpanGroup:
 def chunk_document(
     pages: list[ParsedPage],
     document_id: str,
-    table_page_numbers: Optional[set[int]] = None,
+    table_bboxes_by_page: Optional[dict[int, list[tuple[float, float, float, float]]] | set[int]] = None,
 ) -> list[Chunk]:
     """
     Main chunking entrypoint.
     Returns a list of Chunk objects ready for DB insertion.
-    Table pages are skipped here — table_extractor handles them separately.
+    Spans inside detected table areas are skipped to avoid duplicate chunks.
     """
-    if table_page_numbers is None:
-        table_page_numbers = set()
+    if table_bboxes_by_page is None:
+        table_bboxes_by_page = {}
 
+    legacy_page_mode = isinstance(table_bboxes_by_page, set)
     body_font_size = detect_body_font_size(pages)
     chunks: list[Chunk] = []
 
-    # Collect all spans with section annotations, skipping table pages
+    # Collect all spans with section annotations
     current_section: Optional[str] = None
     current_group_spans: list[TextSpan] = []
     current_section_of_group: Optional[str] = None
     current_token_count: int = 0
-    overlap_buffer: list[TextSpan] = []
 
     def flush_group(spans: list[TextSpan], section: Optional[str]) -> None:
         """Flush current span group into one or more chunks."""
         if not spans:
             return
 
-        text = " ".join(s.text for s in spans)
-        if not text.strip():
+        text = " ".join(s.text for s in spans).strip()
+        if len(text) < 30:
             return
 
         # Determine page_number and bbox for the chunk (use first span's page)
@@ -103,23 +103,28 @@ def chunk_document(
         chunks.append(chunk)
 
     for page in pages:
-        if page.page_number in table_page_numbers:
-            # Table pages handled by table_extractor — flush current group first
+        if legacy_page_mode and page.page_number in table_bboxes_by_page:
             if current_group_spans:
                 flush_group(current_group_spans, current_section_of_group)
                 current_group_spans = []
                 current_token_count = 0
             continue
 
+        page_tbl_bboxes = table_bboxes_by_page.get(page.page_number, []) if not legacy_page_mode else []
+
         for span in page.spans:
+            # Skip spans that fall inside any table on this page
+            if page_tbl_bboxes:
+                smx = (span.bbox[0] + span.bbox[2]) / 2
+                smy = (span.bbox[1] + span.bbox[3]) / 2
+                if any(tx0 <= smx <= tx1 and ty0 <= smy <= ty1 for tx0, ty0, tx1, ty1 in page_tbl_bboxes):
+                    continue
             if is_section_header(span, body_font_size):
-                # New section — flush current group
+                # New section — flush current group without straddling boundary
                 if current_group_spans:
                     flush_group(current_group_spans, current_section_of_group)
-                    # Keep last few spans as overlap for next chunk
-                    overlap_buffer = current_group_spans[-3:]
-                    current_group_spans = list(overlap_buffer)
-                    current_token_count = count_tokens(" ".join(s.text for s in current_group_spans))
+                    current_group_spans = []
+                    current_token_count = 0
                 current_section = span.text.strip()
                 current_section_of_group = current_section
                 # Don't add header span to body content

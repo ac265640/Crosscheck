@@ -138,15 +138,16 @@ def detect_body_font_size(pages: list[ParsedPage]) -> float:
     return size_counts.most_common(1)[0][0]
 
 
-def is_section_header(span: TextSpan, body_font_size: float, threshold_ratio: float = 1.15) -> bool:
+def is_section_header(span: TextSpan, body_font_size: float, threshold_ratio: float = 1.20) -> bool:
     """
     Heuristic: a span is a section header if its font size is meaningfully
-    larger than the body font size, or it uses bold flags.
+    larger than the body font size, or it uses bold flags with at least body font size.
     Bold flag is bit 4 (value 16) in PDF font flags.
     """
     size_ratio = span.font_size / body_font_size if body_font_size > 0 else 1.0
     is_bold = bool(span.font_flags & 16)
     is_larger = size_ratio >= threshold_ratio
-    # Short spans (< 5 words) that are bold or larger are likely headers
     word_count = len(span.text.split())
-    return (is_larger or is_bold) and word_count <= 15 and word_count >= 1
+    # Headers are short spans with larger font or bold body+ font
+    return (is_larger or (is_bold and size_ratio >= 1.05)) and 1 <= word_count <= 15
+

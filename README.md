@@ -5,10 +5,6 @@
 [![Next.js](https://img.shields.io/badge/Frontend-Next.js%2016-black?style=flat-square&logo=next.js)](https://nextjs.org)
 [![Embeddings](https://img.shields.io/badge/Embeddings-BAAI%2Fbge--small--en--v1.5-blue?style=flat-square)](https://huggingface.co/BAAI/bge-small-en-v1.5)
 [![License](https://img.shields.io/badge/License-MIT-purple?style=flat-square)](LICENSE)
-
-> **Superjoin × VIT 2026 Assignment**  
-> A production-grade system that ingests unstructured financial PDFs, extracts every verifiable quantitative claim with grounded source evidence, dynamically canonicalises facts across documents, and autonomously reasons over cross-document relationships (**Corroboration**, **Contradiction**, **Temporal Progression**, and **Semantic Divergence**) — with **zero hardcoded rules or document-specific heuristics**.
-
 ---
 
 ## 1. Setup and Run Instructions
@@ -135,15 +131,6 @@ python eval/run_eval.py
 
 > 🔗 **Video Demo Link**: [3-Minute Video Demo Link](https://youtu.be/your-video-link-here) *(Demo video link — to be updated)*
 
-### What the 3-Minute Walkthrough Showcases:
-1. **Multi-Modal Document Ingestion (0:00 - 0:45)**: Uploading financial filings; real-time extraction pipeline chunking layout text and tables with section header propagation.
-2. **Fact Grounding & Visual Bounding Boxes (0:45 - 1:30)**: Inspecting extracted facts in the Documents table; clicking a fact opens the Evidence Viewer displaying the exact native PDF page snippet highlighted with bounding coordinates and rapidfuzz verification score.
-3. **The Four Required Cross-Document Cases (1:30 - 2:30)**: Exploring `/cases` to observe real, live-computed relationships across independent corporate filings:
-   - **Case 1: Corroboration**: Cross-source verification with automatic unit conversion (e.g., ₹ Million to ₹ Crore and Delhivery fleet aircraft counts).
-   - **Case 2: Contradiction**: Direct metric conflicts flagged with exact page citations (e.g., FY24 Revenue discrepancies between earnings presentations and statutory filings).
-   - **Case 3: Temporal Progression**: Metric evolution over sequential periods (e.g., express parcel volume expanding from 558M to 740M).
-   - **Case 4: Semantic Divergence**: Metric definition drift (e.g., Adjusted EBITDA differences before and after ESOP expense exclusion).
-4. **Auditability & Reasoning Trace (2:30 - 3:00)**: Navigating to `/trace` to audit raw LLM reasoning traces, exact token usage, system prompts, and decision confidence scores.
 
 ---
 
@@ -285,7 +272,10 @@ flowchart TD
 
 ### 3.3 The Four Required Cases Explained
 
-Crosscheck dynamically detects and proves the four required cross-document phenomena from live document pairs:
+Crosscheck dynamically detects and proves all four required cross-document
+phenomena from live document pairs — nothing here is hardcoded to a specific
+fact; each case below is surfaced by querying the relationship table for one
+live example of that classification.
 
 ```
 ┌─────────────────────────┬──────────────────────────────────────────────────────────────────────────┐
@@ -299,13 +289,18 @@ Crosscheck dynamically detects and proves the four required cross-document pheno
 │                         │ • FY24 Revenue discrepancies between preliminary decks & audited reports │
 │                         │ • Bounding box visual citations pinpointing opposing claims              │
 ├─────────────────────────┼──────────────────────────────────────────────────────────────────────────┤
-│ 3. Temporal Progression │ • Tracking the evolution of key operating metrics over sequential periods│
-│                         │ • Express parcel volume progression (558M -> 740M packages)              │
-│                         │ • Explicit temporal reconciliation preventing false contradiction alerts │
+│ 3. Reconciled by Context│ • Apparent contradiction resolved once scope metadata is accounted for   │
+│                         │ • Temporal: express parcel volume progression (558M → 740M) across       │
+│                         │   periods — flagged as growth, not contradiction (scope differs by period│
+│                         │ • Definitional: Adjusted EBITDA (pre-ESOP) vs Operating EBITDA (post-ESOP│
+│                         │   — flagged as a unit/definition difference, not a data conflict         │
 ├─────────────────────────┼──────────────────────────────────────────────────────────────────────────┤
-│ 4. Semantic Divergence  │ • Same attribute name but fundamentally differing accounting definitions │
-│                         │ • Adjusted EBITDA (pre-ESOP) vs. Operating EBITDA (post-ESOP)            │
-│                         │ • Surfacing accounting methodology nuances to the analyst                │
+│ 4. Extraction/Reasoning │ • Real-world failure: In 01-delhivery-prospectus-2022-excerpt.pdf, p. 40,│
+│    Failure              │   the LLM extracted operating principles by bridging fragmented bullets  │
+│                         │   with an ellipsis ("... Growth through partnership"). Rapidfuzz partial │
+│                         │   ratio scored below the 85 threshold due to non-contiguous wording.     │
+│                         │ • How handled: surfaced with an UNVERIFIED badge and excluded from       │
+│                         │   relationship reasoning until reviewed — never silently discarded       │
 └─────────────────────────┴──────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -366,7 +361,3 @@ Beyond this assignment, financial document intelligence and retrieval engineerin
 > *When I saw Superjoin's Crosscheck challenge, I immediately felt the same drive and passion: the conviction that financial AI cannot be a black box; it must be a **rigorously grounded, verifiable, and canonicalized knowledge layer**.*  
 >  
 > *I brought that exact same obsession with precision, architectural rigor, and domain understanding to Crosscheck. I would love to bring this energy, engineering drive, and financial domain expertise to Superjoin."*
-
----
-
-*Authored with passion by Amit Singh Chauhan for the Superjoin × VIT 2026 Engineering Assignment.*

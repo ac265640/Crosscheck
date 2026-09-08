@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import Sidebar from '@/components/layout/Sidebar';
+import GridBackground from '@/components/layout/GridBackground';
 
 export const metadata: Metadata = {
   title: 'Crosscheck — Cross-document Fact Reasoning',
@@ -12,8 +13,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body>
         <div className="app-layout">
+          {/* Sidebar is fully opaque — grid never shows through */}
           <Sidebar />
-          <main className="main-content">
+          {/* Grid lives INSIDE main-content only */}
+          <main className="main-content grid-bg">
+            <GridBackground />
             <div className="page-body">{children}</div>
           </main>
         </div>

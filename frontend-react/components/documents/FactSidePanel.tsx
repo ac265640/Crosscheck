@@ -24,7 +24,7 @@ export default function FactSidePanel({ fact, onClose }: Props) {
 
   const statusColor =
     fact.verification_status === 'verified' ? 'var(--success)' :
-    fact.verification_status === 'unverified' ? 'var(--warning)' : 'var(--danger)';
+      fact.verification_status === 'unverified' ? 'var(--warning)' : 'var(--danger)';
 
   return (
     <div className="side-panel">

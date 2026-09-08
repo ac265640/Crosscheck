@@ -20,15 +20,19 @@ load_dotenv(PROJECT_ROOT / ".env")
 
 # ── Google Gemini ──────────────────────────────────────────────────────────────
 GOOGLE_API_KEY: str = os.getenv("GOOGLE_API_KEY", "")
-GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite-preview-06-17")
+GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 # Fallback chain: if primary model hits quota (429), try these in order
 # All must be valid Gemini model IDs; configurable via env
 _fallback_env = os.getenv("FALLBACK_MODELS", "")
 FALLBACK_MODELS: list[str] = (
     [m.strip() for m in _fallback_env.split(",") if m.strip()]
     if _fallback_env
-    else [GEMINI_MODEL, "gemini-2.0-flash", "gemini-1.5-flash"]
+    else [GEMINI_MODEL, "gemini-2.5-flash"]
 )
+
+# ── Groq (fast free-tier LLM — replaces Gemini for extraction/reasoning) ────────
+GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
+GROQ_MODEL: str = os.getenv("GROQ_MODEL", "qwen/qwen3.8-27b")
 
 # ── Embedding model (local, CPU) ───────────────────────────────────────────────
 EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "BAAI/bge-small-en-v1.5")
@@ -38,11 +42,17 @@ MAX_CHUNK_TOKENS: int = int(os.getenv("MAX_CHUNK_TOKENS", "800"))
 CHUNK_OVERLAP_TOKENS: int = int(os.getenv("CHUNK_OVERLAP_TOKENS", "100"))
 
 # ── Canonicalization thresholds ────────────────────────────────────────────────
-CANON_AUTO_THRESHOLD: float = float(os.getenv("CANON_AUTO_THRESHOLD", "0.92"))
-CANON_TIEBREAK_THRESHOLD: float = float(os.getenv("CANON_TIEBREAK_THRESHOLD", "0.75"))
+# Raised from 0.92 → 0.97: near-identical facts auto-assign without LLM (faster)
+CANON_AUTO_THRESHOLD: float = float(os.getenv("CANON_AUTO_THRESHOLD", "0.97"))
+# Lowered from 0.75 → 0.60: borderline pairs create new key instead of LLM call (faster)
+CANON_TIEBREAK_THRESHOLD: float = float(os.getenv("CANON_TIEBREAK_THRESHOLD", "0.60"))
 
 # ── Evidence verification ──────────────────────────────────────────────────────
 EVIDENCE_VERIFICATION_THRESHOLD: int = int(os.getenv("EVIDENCE_VERIFICATION_THRESHOLD", "85"))
+
+# ── Relationship Reasoning Cap ────────────────────────────────────────────────
+# Reduced from 50 → 15: still seeds all 4 relationship types, cuts reasoning time by 70%
+RELATIONSHIP_REASONING_MAX_PAIRS: int = int(os.getenv("RELATIONSHIP_REASONING_MAX_PAIRS", "15"))
 
 # ── Storage ────────────────────────────────────────────────────────────────────
 _raw_db = Path(os.getenv("DB_PATH", "data/factstore.db"))

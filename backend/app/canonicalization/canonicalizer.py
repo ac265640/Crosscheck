@@ -16,15 +16,13 @@ import json
 import time
 import uuid
 
-import google.generativeai as genai
 import numpy as np
 
 from backend.app.canonicalization.embedder import cosine_similarity, embed_text
 from backend.app.config import (
     CANON_AUTO_THRESHOLD,
     CANON_TIEBREAK_THRESHOLD,
-    GEMINI_MODEL,
-    GOOGLE_API_KEY,
+    GROQ_MODEL,
 )
 from backend.app.models.schema import CanonTieBreakResult, Fact
 from backend.app.storage.repository import (
@@ -34,7 +32,6 @@ from backend.app.storage.repository import (
 )
 from backend.app.tracing.trace_log import log_llm_call
 
-genai.configure(api_key=GOOGLE_API_KEY, transport="rest")
 
 import re
 from rapidfuzz import fuzz
@@ -235,8 +232,8 @@ def _llm_tiebreak(
     attribute_b: str,
     context_b: str,
 ) -> bool:
-    """Ask Gemini whether two (entity, attribute) pairs refer to the same concept."""
-    from backend.app.config import FALLBACK_MODELS
+    """Ask Groq whether two (entity, attribute) pairs refer to the same concept."""
+    from backend.app.llm_client import call_llm
     user_msg = f"""Phrasing A: entity="{entity_a}", attribute="{attribute_a}"
 Context A: "{context_a}"
 
@@ -245,47 +242,31 @@ Context B: "{context_b}"
 
 Are these the same underlying concept for comparison purposes?"""
 
-    last_error: str | None = None
-    for attempt in range(len(FALLBACK_MODELS)):
-        active_model = FALLBACK_MODELS[attempt % len(FALLBACK_MODELS)]
-        model = genai.GenerativeModel(
-            model_name=active_model,
-            system_instruction=CANON_TIEBREAK_SYSTEM,
+    t0 = time.monotonic()
+    try:
+        raw = call_llm(
+            system_prompt=CANON_TIEBREAK_SYSTEM,
+            user_message=user_msg,
         )
-        t0 = time.monotonic()
-        try:
-            response = model.generate_content(
-                user_msg,
-                generation_config=genai.GenerationConfig(
-                    response_mime_type="application/json",
-                    temperature=0.0,
-                ),
-            )
-            latency_ms = (time.monotonic() - t0) * 1000
-            result = CanonTieBreakResult.model_validate_json(response.text)
-            log_llm_call(
-                call_type="canonicalization_tiebreak",
-                model=active_model,
-                input_summary=f'"{entity_a}/{attribute_a}" vs "{entity_b}/{attribute_b}"',
-                output_summary=f"same_concept={result.same_concept}: {result.reasoning[:80]}",
-                latency_ms=latency_ms,
-                success=True,
-            )
-            return result.same_concept
-        except Exception as e:
-            latency_ms = (time.monotonic() - t0) * 1000
-            last_error = str(e)
-            log_llm_call(
-                call_type="canonicalization_tiebreak",
-                model=active_model,
-                input_summary=f'"{entity_a}/{attribute_a}" vs "{entity_b}/{attribute_b}"',
-                output_summary=f"tiebreak failed: {str(e)[:80]}",
-                latency_ms=latency_ms,
-                success=False,
-            )
-            if "429" in last_error or "ResourceExhausted" in last_error:
-                time.sleep(2)
-                continue
-            break
-
-    return False
+        latency_ms = (time.monotonic() - t0) * 1000
+        result = CanonTieBreakResult.model_validate_json(raw)
+        log_llm_call(
+            call_type="canonicalization_tiebreak",
+            model=GROQ_MODEL,
+            input_summary=f'"{entity_a}/{attribute_a}" vs "{entity_b}/{attribute_b}"',
+            output_summary=f"same_concept={result.same_concept}: {result.reasoning[:80]}",
+            latency_ms=latency_ms,
+            success=True,
+        )
+        return result.same_concept
+    except Exception as e:
+        latency_ms = (time.monotonic() - t0) * 1000
+        log_llm_call(
+            call_type="canonicalization_tiebreak",
+            model=GROQ_MODEL,
+            input_summary=f'"{entity_a}/{attribute_a}" vs "{entity_b}/{attribute_b}"',
+            output_summary=f"tiebreak failed: {str(e)[:80]}",
+            latency_ms=latency_ms,
+            success=False,
+        )
+        return False

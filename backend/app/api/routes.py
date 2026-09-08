@@ -5,46 +5,27 @@ All endpoints are documented here. Business logic lives in the backend modules.
 
 from __future__ import annotations
 
-import io
-import uuid
-from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
-from fastapi import APIRouter, File, HTTPException, Query, UploadFile
-from fastapi.responses import Response, StreamingResponse
+from fastapi import APIRouter, BackgroundTasks, File, HTTPException, Query, UploadFile
+from fastapi.responses import Response
 
-from backend.app.canonicalization.canonicalizer import canonicalize_fact
-from backend.app.canonicalization.embedder import embed_text
+from backend.app.api.jobs import create_job, job_router
 from backend.app.config import DB_PATH, PROJECT_ROOT
-from backend.app.extraction.fact_extractor import extract_facts_from_chunk
-from backend.app.guardrails.evidence_verifier import verify_fact_evidence
-from backend.app.ingestion.chunker import chunk_document
 from backend.app.ingestion.pdf_parser import (
-    detect_body_font_size,
-    parse_pdf,
     render_page_as_image,
     render_page_with_highlight,
 )
-from backend.app.ingestion.table_extractor import (
-    build_section_map_from_pages,
-    extract_tables_from_pdf,
-)
-from backend.app.models.schema import Document, Fact, Relationship
-from backend.app.reasoning.relationship_engine import reason_about_fact
+from backend.app.ingestion.pipeline import run_pipeline
 from backend.app.storage.db import init_db
 from backend.app.storage.repository import (
     count_facts_for_document,
     document_exists,
-    get_chunk,
     get_chunks_for_document,
     get_document,
     get_fact,
     get_relationships_for_fact,
-    insert_chunk,
-    insert_document,
-    insert_fact,
     list_documents,
     list_facts_for_document,
     list_relationships_by_type,
@@ -52,6 +33,7 @@ from backend.app.storage.repository import (
 from backend.app.tracing.trace_log import read_recent_traces
 
 router = APIRouter()
+router.include_router(job_router)
 
 # Ensure DB is initialized on import
 init_db(DB_PATH)
@@ -64,11 +46,16 @@ _UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 # ── POST /documents ────────────────────────────────────────────────────────────
 
 @router.post("/documents")
-async def upload_document(file: UploadFile = File(...)):
+async def upload_document(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+):
     """
-    Upload a PDF. Runs the full pipeline:
-    ingest → extract → verify → canonicalize → index → reason.
-    Returns document_id and summary counts.
+    Upload a PDF. Returns {job_id, status: 'queued'} immediately (< 1s).
+    The pipeline runs asynchronously in a BackgroundTask.
+    Track progress via:
+      GET /jobs/{job_id}/stream  (SSE real-time)
+      GET /jobs/{job_id}/status  (poll fallback)
     """
     if not file.filename.endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are supported.")
@@ -80,92 +67,28 @@ async def upload_document(file: UploadFile = File(...)):
             detail=f"Document '{file.filename}' already ingested. Delete and re-upload to reprocess.",
         )
 
-    # Save file
+    # Save file to disk before returning
     pdf_path = _UPLOAD_DIR / file.filename
     content = await file.read()
     with open(pdf_path, "wb") as f:
         f.write(content)
 
-    # Parse PDF
-    try:
-        pages, page_count = parse_pdf(pdf_path)
-    except Exception as e:
-        raise HTTPException(status_code=422, detail=f"PDF parsing failed: {e}")
+    # Create job in registry — captures the current event loop
+    job = create_job(file.filename)
 
-    # Create document record
-    doc_id = str(uuid.uuid4())
-    doc = Document(
-        id=doc_id,
-        filename=file.filename,
-        uploaded_at=datetime.now(timezone.utc),
-        page_count=page_count,
-    )
-    insert_document(doc, DB_PATH)
+    def _worker():
+        try:
+            run_pipeline(pdf_path, file.filename, job, DB_PATH)
+        except Exception as e:
+            job.push("error", -1, f"Ingestion error: {str(e)}")
 
-    # Build section map for table tagging
-    section_map = build_section_map_from_pages(pages)
+    background_tasks.add_task(_worker)
 
-    # Extract tables
-    table_chunks, table_bboxes = extract_tables_from_pdf(
-        pdf_path, doc_id, section_map
-    )
-
-    # Text chunking (skips spans inside table regions)
-    text_chunks = chunk_document(pages, doc_id, table_bboxes)
-    all_chunks = text_chunks + table_chunks
-
-    # Insert chunks
-    for chunk in all_chunks:
-        insert_chunk(chunk, DB_PATH)
-
-    # Build chunk_text_map for verification
-    chunk_text_map = {c.id: c.text for c in all_chunks}
-
-    # Extract facts per chunk concurrently
-    all_facts: list[Fact] = []
-    with ThreadPoolExecutor(max_workers=5) as executor:
-        chunk_facts_list = list(
-            executor.map(lambda c: extract_facts_from_chunk(c, file.filename), all_chunks)
-        )
-
-    for facts in chunk_facts_list:
-        for fact in facts:
-            # Verify evidence
-            fact = verify_fact_evidence(fact, chunk_text_map.get(fact.chunk_id, ""))
-            # Embed and insert
-            if fact.verification_status != "extraction_failed":
-                emb = embed_text(f"{fact.entity} {fact.attribute}: {fact.value}")
-            else:
-                emb = None
-            insert_fact(fact, emb, DB_PATH)
-            all_facts.append(fact)
-
-    # Canonicalize
-    for fact in all_facts:
-        if fact.verification_status != "extraction_failed":
-            chunk = get_chunk(fact.chunk_id, DB_PATH)
-            chunk_text = chunk.text if chunk else ""
-            fact.canonical_key = canonicalize_fact(fact, chunk_text)
-
-    # Relationship reasoning (against existing store) concurrently
-    new_relationships: list[Relationship] = []
-    valid_facts = [f for f in all_facts if f.verification_status != "extraction_failed"]
-    with ThreadPoolExecutor(max_workers=5) as executor:
-        rel_lists = list(executor.map(lambda f: reason_about_fact(f, DB_PATH), valid_facts))
-    for rels in rel_lists:
-        new_relationships.extend(rels)
-
-    counts = count_facts_for_document(doc_id, DB_PATH)
     return {
-        "document_id": doc_id,
+        "job_id": job.job_id,
         "filename": file.filename,
-        "page_count": page_count,
-        "chunk_count": len(all_chunks),
-        "fact_count": len(all_facts),
-        "verified": counts.get("verified", 0),
-        "unverified": counts.get("unverified", 0),
-        "extraction_failed": counts.get("extraction_failed", 0),
-        "new_relationships": len(new_relationships),
+        "status": "queued",
+        "message": f"Document '{file.filename}' queued. Track at /jobs/{job.job_id}/stream",
     }
 
 

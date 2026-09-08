@@ -21,11 +21,13 @@ from backend.app.ingestion.pipeline import run_pipeline
 from backend.app.storage.db import init_db
 from backend.app.storage.repository import (
     count_facts_for_document,
+    delete_document,
     document_exists,
     get_chunks_for_document,
     get_document,
     get_fact,
     get_relationships_for_fact,
+    get_relationships_for_document,
     list_documents,
     list_facts_for_document,
     list_relationships_by_type,
@@ -80,6 +82,8 @@ async def upload_document(
         try:
             run_pipeline(pdf_path, file.filename, job, DB_PATH)
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             job.push("error", -1, f"Ingestion error: {str(e)}")
 
     background_tasks.add_task(_worker)
@@ -127,6 +131,28 @@ def get_document_facts(doc_id: str, status: Optional[str] = Query(None)):
     return [f.model_dump() for f in facts]
 
 
+# ── DELETE /documents/{id} ───────────────────────────────────────────────────
+
+@router.delete("/documents/{doc_id}")
+def remove_document(doc_id: str):
+    """Delete a document and all associated chunks, facts, and relationships."""
+    doc = get_document(doc_id, DB_PATH)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found.")
+
+    delete_document(doc_id, DB_PATH)
+
+    # Clean up uploaded PDF if exists
+    pdf_path = _UPLOAD_DIR / doc.filename
+    if pdf_path.exists():
+        try:
+            pdf_path.unlink()
+        except OSError:
+            pass
+
+    return {"status": "ok", "message": f"Document '{doc.filename}' deleted successfully."}
+
+
 # ── GET /facts/{id} ────────────────────────────────────────────────────────────
 
 @router.get("/facts/{fact_id}")
@@ -138,23 +164,50 @@ def get_single_fact(fact_id: str):
     return fact.model_dump()
 
 
+# ── GET /documents/{id}/relationships ─────────────────────────────────────────
+
+@router.get("/documents/{doc_id}/relationships")
+def get_document_relationships(doc_id: str, limit: int = 200):
+    """All cross-document relationships involving facts in this document with rich evidence quotes."""
+    doc = get_document(doc_id, DB_PATH)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found.")
+    return get_relationships_for_document(doc_id, limit=limit, db_path=DB_PATH)
+
+
 # ── GET /facts/{id}/relationships ─────────────────────────────────────────────
 
 @router.get("/facts/{fact_id}/relationships")
 def get_fact_relationships(fact_id: str):
-    """All relationships involving this fact, with the linked fact and explanation."""
+    """All relationships involving this fact, with full details for both facts and explanations."""
     fact = get_fact(fact_id, DB_PATH)
     if not fact:
         raise HTTPException(status_code=404, detail="Fact not found.")
 
+    doc_a = get_document(fact.document_id, DB_PATH)
     relationships = get_relationships_for_fact(fact_id, DB_PATH)
     result = []
     for rel in relationships:
         linked_fact_id = rel.fact_id_b if rel.fact_id_a == fact_id else rel.fact_id_a
         linked_fact = get_fact(linked_fact_id, DB_PATH)
+        doc_b = get_document(linked_fact.document_id, DB_PATH) if linked_fact else None
+
+        fa_dict = fact.model_dump()
+        fa_dict["document_filename"] = doc_a.filename if doc_a else None
+
+        fb_dict = linked_fact.model_dump() if linked_fact else None
+        if fb_dict and doc_b:
+            fb_dict["document_filename"] = doc_b.filename
+
         result.append({
+            "id": rel.id,
+            "relationship_type": rel.relationship_type,
+            "confidence": rel.confidence,
+            "explanation": rel.explanation,
             "relationship": rel.model_dump(),
-            "linked_fact": linked_fact.model_dump() if linked_fact else None,
+            "fact_a": fa_dict,
+            "fact_b": fb_dict,
+            "linked_fact": fb_dict,  # backwards compatibility
         })
     return result
 

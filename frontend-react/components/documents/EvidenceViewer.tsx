@@ -7,11 +7,13 @@ export default function EvidenceViewer({ fact }: { fact: Fact }) {
     ? getPageImageUrl(fact.document_id, fact.page_number, fact.bbox ?? undefined)
     : null;
 
+  const quote = fact.verbatim_evidence || fact.verbatim_quote;
+
   return (
     <div>
-      {fact.verbatim_quote && (
+      {quote && (
         <div className="evidence-quote">
-          &ldquo;{fact.verbatim_quote}&rdquo;
+          &ldquo;{quote}&rdquo;
         </div>
       )}
       {imageUrl && (

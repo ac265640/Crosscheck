@@ -21,7 +21,7 @@ echo ""
 
 # Start FastAPI backend in background
 echo "[1/2] Starting FastAPI backend..."
-PYTHONPATH="$PROJECT_ROOT" uvicorn backend.app.main:app \
+PYTHONPATH="$PROJECT_ROOT" python3 -m uvicorn backend.app.main:app \
   --host 0.0.0.0 --port 8000 --reload \
   --reload-dir backend/ &
 BACKEND_PID=$!

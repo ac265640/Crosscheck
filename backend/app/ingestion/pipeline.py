@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any
 
 from backend.app.canonicalization.canonicalizer import canonicalize_fact
-from backend.app.canonicalization.embedder import embed_text
+from backend.app.canonicalization.embedder import embed_batch, embed_text
 from backend.app.config import DB_PATH, PROJECT_ROOT, RELATIONSHIP_REASONING_MAX_PAIRS
 from backend.app.extraction.fact_extractor import extract_facts_from_chunk, BATCH_SIZE
 from backend.app.guardrails.evidence_verifier import verify_fact_evidence
@@ -124,18 +124,17 @@ def run_pipeline(
             if fact.verification_status != "extraction_failed":
                 facts_to_embed.append(fact)
 
-    # Embed in parallel
+    # Embed in batch (fast, vectorized, thread-safe)
     embeddings: dict[str, Any] = {}
-    with ThreadPoolExecutor(max_workers=8) as executor:
-        future_to_fact = {
-            executor.submit(embed_text, f"{f.entity} {f.attribute}: {f.value}"): f
-            for f in facts_to_embed
-        }
-        for future in as_completed(future_to_fact):
-            f = future_to_fact[future]
-            try:
-                embeddings[f.id] = future.result()
-            except Exception:
+    if facts_to_embed:
+        texts = [f"{f.entity} {f.attribute}: {f.value}" for f in facts_to_embed]
+        try:
+            vectors = embed_batch(texts)
+            for f, vec in zip(facts_to_embed, vectors):
+                embeddings[f.id] = vec
+        except Exception as e:
+            print(f"Batch embed error: {e}")
+            for f in facts_to_embed:
                 embeddings[f.id] = None
 
     # DB writes (must be serial for SQLite)

@@ -27,6 +27,11 @@ export interface Fact {
   date_context?: string | null;
   source_text: string;
   source_page?: number | null;
+  page_number?: number | null;
+  verbatim_evidence?: string | null;
+  verbatim_quote?: string | null;
+  scope?: string | null;
+  canonical_key?: string | null;
   bbox?: [number, number, number, number] | null;
   verification_status: 'verified' | 'unverified' | 'extraction_failed';
   confidence?: number | null;
@@ -48,16 +53,22 @@ export interface Relationship {
 }
 
 export interface FactRelationship {
+  id?: string;
+  relationship_type?: RelType;
+  confidence?: number;
+  explanation?: string;
   relationship: Relationship;
-  linked_fact: Fact | null;
+  fact_a?: (Fact & { document_filename?: string }) | null;
+  fact_b?: (Fact & { document_filename?: string }) | null;
+  linked_fact?: (Fact & { document_filename?: string }) | null;
 }
 
 // ── Cases ─────────────────────────────────────────────────────────────────────
 
 export interface CaseEntry {
   relationship: Relationship;
-  fact_a: Fact | null;
-  fact_b: Fact | null;
+  fact_a: (Fact & { document_filename?: string }) | null;
+  fact_b: (Fact & { document_filename?: string }) | null;
 }
 
 export type CasesData = Record<RelType, CaseEntry | null>;
@@ -65,7 +76,8 @@ export type CasesData = Record<RelType, CaseEntry | null>;
 // ── Trace ─────────────────────────────────────────────────────────────────────
 
 export interface TraceEntry {
-  ts: string;
+  timestamp?: string;
+  ts?: string;
   call_type: string;
   model: string;
   success: boolean;

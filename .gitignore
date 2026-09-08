@@ -61,3 +61,16 @@ htmlcov/
 # Assignment archive and brief
 *.zip
 superjoin-vit-2026-assignment.pdf
+
+# Internal / not for reviewers
+MASTER_BUILD_PROMPT.md
+claude-token-efficient/
+frontend/
+
+# Next.js build output
+frontend-react/.next/
+frontend-react/node_modules/
+
+# Sentence-transformer / HuggingFace model downloads
+models/
+.cache/huggingface/

@@ -317,6 +317,81 @@ def list_relationships_by_type(
     return [_row_to_relationship(r) for r in rows]
 
 
+def get_relationships_for_document(
+    doc_id: str, limit: int = 200, db_path: Path = DB_PATH
+) -> list[dict]:
+    """Returns rich cross-document relationships involving facts in doc_id, with both facts and filenames."""
+    conn = get_connection(db_path)
+    query = """
+        SELECT r.id as rel_id, r.relationship_type, r.confidence, r.explanation,
+               fa.id as fa_id, fa.entity as fa_entity, fa.attribute as fa_attribute,
+               fa.value as fa_value, fa.unit as fa_unit, fa.page_number as fa_page,
+               fa.verbatim_evidence as fa_evidence, fa.document_id as fa_doc_id, da.filename as fa_filename,
+               fb.id as fb_id, fb.entity as fb_entity, fb.attribute as fb_attribute,
+               fb.value as fb_value, fb.unit as fb_unit, fb.page_number as fb_page,
+               fb.verbatim_evidence as fb_evidence, fb.document_id as fb_doc_id, db.filename as fb_filename
+        FROM relationships r
+        JOIN facts fa ON r.fact_id_a = fa.id
+        JOIN facts fb ON r.fact_id_b = fb.id
+        JOIN documents da ON fa.document_id = da.id
+        JOIN documents db ON fb.document_id = db.id
+        WHERE fa.document_id = ? OR fb.document_id = ?
+        ORDER BY r.confidence DESC
+        LIMIT ?
+    """
+    rows = conn.execute(query, (doc_id, doc_id, limit)).fetchall()
+    conn.close()
+
+    results = []
+    for row in rows:
+        is_a_this_doc = row["fa_doc_id"] == doc_id
+        fa_data = {
+            "id": row["fa_id"],
+            "entity": row["fa_entity"],
+            "attribute": row["fa_attribute"],
+            "value": row["fa_value"],
+            "unit": row["fa_unit"],
+            "page_number": row["fa_page"],
+            "verbatim_evidence": row["fa_evidence"],
+            "document_id": row["fa_doc_id"],
+            "document_filename": row["fa_filename"],
+        }
+        fb_data = {
+            "id": row["fb_id"],
+            "entity": row["fb_entity"],
+            "attribute": row["fb_attribute"],
+            "value": row["fb_value"],
+            "unit": row["fb_unit"],
+            "page_number": row["fb_page"],
+            "verbatim_evidence": row["fb_evidence"],
+            "document_id": row["fb_doc_id"],
+            "document_filename": row["fb_filename"],
+        }
+
+        # Keep fact_a as the current document's fact for intuitive comparison
+        fact_a = fa_data if is_a_this_doc else fb_data
+        fact_b = fb_data if is_a_this_doc else fa_data
+
+        results.append({
+            "id": row["rel_id"],
+            "relationship_type": row["relationship_type"],
+            "confidence": row["confidence"],
+            "explanation": row["explanation"],
+            "relationship": {
+                "id": row["rel_id"],
+                "fact_id_a": row["fa_id"],
+                "fact_id_b": row["fb_id"],
+                "relationship_type": row["relationship_type"],
+                "confidence": row["confidence"],
+                "explanation": row["explanation"],
+            },
+            "fact_a": fact_a,
+            "fact_b": fact_b,
+            "linked_fact": fact_b,  # backwards compatibility
+        })
+    return results
+
+
 def _row_to_relationship(row: sqlite3.Row) -> Relationship:
     return Relationship(
         id=row["id"],

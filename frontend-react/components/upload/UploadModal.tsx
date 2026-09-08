@@ -51,8 +51,8 @@ export default function UploadModal({ onClose }: Props) {
   return (
     <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="modal">
-        <div className="modal-title">📄 Upload PDF</div>
-        <div className="modal-sub">Drag and drop a PDF to ingest it into Crosscheck</div>
+        <div className="modal-title">Upload PDF</div>
+        <div className="modal-sub">Drag and drop a PDF to ingest it into the knowledge layer</div>
 
         {!jobId && !uploading && (
           <div
@@ -62,11 +62,15 @@ export default function UploadModal({ onClose }: Props) {
             onDrop={onDrop}
             onClick={() => document.getElementById('file-input')?.click()}
           >
-            <div className="dropzone-icon">
-              {dragging ? '📂' : '📄'}
+            <div className="dropzone-icon" style={{ display: 'flex', justifyContent: 'center' }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" style={{ color: 'var(--accent)' }}>
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
             </div>
             <div className="dropzone-text">
-              {dragging ? 'Drop to upload!' : 'Drag a PDF here or click to browse'}
+              {dragging ? 'Drop PDF here' : 'Drag a PDF here or click to browse'}
             </div>
             <div className="dropzone-sub">Max size: 100 MB · PDF only</div>
             <input
@@ -80,7 +84,7 @@ export default function UploadModal({ onClose }: Props) {
 
         {uploading && (
           <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
-            <span className="spinner" style={{ width: 28, height: 28 }} />
+            <span className="spinner" style={{ width: 24, height: 24 }} />
             <p style={{ marginTop: 12 }}>Uploading {file?.name}…</p>
           </div>
         )}
@@ -88,14 +92,14 @@ export default function UploadModal({ onClose }: Props) {
         {jobId && (
           <div>
             <div style={{ marginBottom: 12, fontSize: 13, color: 'var(--text-muted)' }}>
-              📄 <strong style={{ color: 'var(--text-primary)' }}>{file?.name}</strong>
+              File: <strong style={{ color: 'var(--text-primary)' }}>{file?.name}</strong>
             </div>
             <ProgressStream jobId={jobId} onDone={onDone} />
           </div>
         )}
 
         {error && (
-          <div className="progress-error" style={{ marginTop: 12 }}>✕ {error}</div>
+          <div className="progress-error" style={{ marginTop: 12 }}>{error}</div>
         )}
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 24, gap: 10 }}>

@@ -39,6 +39,17 @@ export function computeStats(docs: DocumentSummary[]) {
   return { totalDocs, totalFacts, totalVerified, verifiedRate };
 }
 
+export function deleteDocument(
+  docId: string,
+): Promise<{ status: string; message: string }> {
+  return apiFetch<{ status: string; message: string }>(
+    `/documents/${encodeURIComponent(docId)}`,
+    {
+      method: 'DELETE',
+    },
+  );
+}
+
 // ── Document Facts ────────────────────────────────────────────────────────────
 
 export function fetchDocumentFacts(
@@ -49,6 +60,15 @@ export function fetchDocumentFacts(
   return apiFetch<Fact[]>(`/documents/${encodeURIComponent(docId)}/facts${qs}`);
 }
 
+export function getPageImageUrl(
+  docId: string,
+  pageNumber: number,
+  bbox?: [number, number, number, number] | number[],
+): string {
+  const qs = bbox && bbox.length === 4 ? `?highlight_bbox=${bbox.join(',')}` : '';
+  return `${BASE_URL}/documents/${encodeURIComponent(docId)}/pages/${pageNumber}/image${qs}`;
+}
+
 // ── Fact relationships ────────────────────────────────────────────────────────
 
 export function fetchFactRelationships(
@@ -57,6 +77,12 @@ export function fetchFactRelationships(
   return apiFetch<FactRelationship[]>(
     `/facts/${encodeURIComponent(factId)}/relationships`,
   );
+}
+
+// ── Document Relationships ───────────────────────────────────────────
+
+export function fetchDocumentRelationships(docId: string, limit = 200): Promise<FactRelationship[]> {
+  return apiFetch<FactRelationship[]>(`/documents/${encodeURIComponent(docId)}/relationships?limit=${limit}`);
 }
 
 // ── Cases ─────────────────────────────────────────────────────────────────────

@@ -33,6 +33,10 @@ app.include_router(router)
 @app.on_event("startup")
 async def startup():
     init_db(DB_PATH)
+    # Pre-warm embedder in background thread so first upload is instant
+    import threading
+    from backend.app.canonicalization.embedder import get_embedder
+    threading.Thread(target=get_embedder, daemon=True).start()
 
 
 @app.get("/health")

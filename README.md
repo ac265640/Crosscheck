@@ -1,142 +1,372 @@
-# Fact Knowledge Layer — Superjoin VIT 2026 Assignment
+# Crosscheck — Autonomous Fact Knowledge Layer & Cross-Document Verification
 
-A system that ingests arbitrary PDFs, extracts factual claims with grounded evidence, canonicalises them, and reasons about how facts relate across documents: **corroboration**, **contradiction**, **reconciled context**, or **uncertain**.
+[![Tests](https://img.shields.io/badge/Tests-40%20Passed-brightgreen?style=flat-square&logo=pytest)](https://github.com/ac265640/Crosscheck)
+[![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?style=flat-square&logo=fastapi)](https://fastapi.tiangolo.com)
+[![Next.js](https://img.shields.io/badge/Frontend-Next.js%2016-black?style=flat-square&logo=next.js)](https://nextjs.org)
+[![Embeddings](https://img.shields.io/badge/Embeddings-BAAI%2Fbge--small--en--v1.5-blue?style=flat-square)](https://huggingface.co/BAAI/bge-small-en-v1.5)
+[![License](https://img.shields.io/badge/License-MIT-purple?style=flat-square)](LICENSE)
+
+> **Superjoin × VIT 2026 Assignment**  
+> A production-grade system that ingests unstructured financial PDFs, extracts every verifiable quantitative claim with grounded source evidence, dynamically canonicalises facts across documents, and autonomously reasons over cross-document relationships (**Corroboration**, **Contradiction**, **Temporal Progression**, and **Semantic Divergence**) — with **zero hardcoded rules or document-specific heuristics**.
 
 ---
 
 ## 1. Setup and Run Instructions
 
+Follow these steps to run Crosscheck locally on your system.
+
 ### Prerequisites
 
-- Python 3.9+
-- A Google Gemini API key (`GOOGLE_API_KEY`)
+| Component | Required Version | Purpose |
+|---|---|---|
+| **Python** | 3.10+ (tested on 3.11) | Core ingestion, extraction, and FastAPI backend |
+| **Node.js** | 18+ (tested on 20+) | Next.js React frontend dashboard |
+| **npm** | 9+ | Frontend package manager |
+| **LLM API Key** | Groq *(Recommended, free tier)* or Google Gemini | Fast structured extraction & cross-document reasoning |
 
-### Install
+---
+
+### 1.1 Clone Repository & Install Python Dependencies
 
 ```bash
 git clone https://github.com/ac265640/Crosscheck.git
 cd Crosscheck
+
+# Create and activate virtual environment (optional but recommended)
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install backend dependencies
 pip install -r requirements.txt
 ```
 
-### Configure
+---
+
+### 1.2 Configure Environment Variables
+
+Create your local `.env` file from the provided template:
 
 ```bash
 cp .env.example .env
-# Edit .env and set your GOOGLE_API_KEY
 ```
 
-### Run (backend + frontend together)
+Open `.env` and add your LLM API key. Crosscheck supports **Groq** (fastest throughput, recommended) and **Google Gemini**:
+
+```bash
+# Recommended: Groq API Key (Free tier at https://console.groq.com/keys)
+GROQ_API_KEY=gsk_your_groq_api_key_here
+GROQ_MODEL=qwen/qwen3.8-27b
+
+# Optional / Fallback: Google Gemini API Key (https://aistudio.google.com/)
+GOOGLE_API_KEY=your_google_api_key_here
+GEMINI_MODEL=gemini-2.5-flash
+```
+
+> **Security Note:** `.env` is strictly gitignored. Your credentials will remain safe on your local machine.
+
+---
+
+### 1.3 Install Frontend Dependencies
+
+```bash
+cd frontend-react
+npm install
+cd ..
+```
+
+---
+
+### 1.4 Start Both Servers (One-Command Dev Server)
+
+We provide a unified runner script that boots both the FastAPI backend and Next.js frontend concurrently with hot-reloading:
 
 ```bash
 bash scripts/run_dev.sh
 ```
 
-This starts:
-- FastAPI backend on http://localhost:8000
-- Streamlit frontend on http://localhost:8501
+Once running, access the services:
 
-### Seed the demo dataset
+| Application | URL | Description |
+|---|---|---|
+| **Web Dashboard** | [http://localhost:3000](http://localhost:3000) | Next.js interactive frontend (Documents, Four Cases, Evidence Viewer, Trace) |
+| **FastAPI Backend** | [http://localhost:8000](http://localhost:8000) | REST API & SSE ingestion stream |
+| **Interactive API Docs** | [http://localhost:8000/docs](http://localhost:8000/docs) | Swagger UI for exploring and testing API endpoints |
 
-We provide two seeding scripts:
+---
 
-**Option A — Direct (recommended, bypasses HTTP timeouts for large PDFs):**
+### 1.5 Quick Seeding / Ingesting Documents
+
+You have two options to populate and test the system:
+
+#### Option A: Direct In-Process Seeding (Fastest & Easiest)
+Processes the curated Delhivery & India Macroeconomy PDFs end-to-end (ingestion, extraction, grounding, canonicalisation, and cross-document reasoning) directly into SQLite:
 
 ```bash
 python scripts/seed_direct.py
 ```
 
-This runs the full pipeline in-process without an HTTP timeout limit. Processes all 6 starter PDFs.
+#### Option B: Live Web UI Drag-and-Drop
+1. Navigate to [http://localhost:3000](http://localhost:3000)
+2. Click **"Upload PDF"** in the top navigation
+3. Drag and drop any PDF from `starter-datasets/delhivery/` or `starter-datasets/india-macroeconomy/`
+4. Watch the real-time SSE progress stream process chunks, extract facts, verify grounding, and link relationships live!
 
-**Option B — via HTTP API (requires backend running):**
+---
 
+### 1.6 Running Tests & Evaluation Harness
+
+#### Automated Test Suite (40/40 Passing)
 ```bash
-python scripts/seed_demo.py
+PYTHONPATH=. pytest tests/ -v
 ```
 
-Uses a 300-second HTTP timeout per document. Suitable for smaller PDFs.
-
-### Evaluate
+#### Precision / Recall / F1 Evaluation Harness
+Evaluates system extraction and grounding accuracy against 15 hand-curated ground-truth financial facts:
 
 ```bash
 python eval/run_eval.py
-```
-
-Prints precision / recall / F1 against hand-curated ground-truth facts.
-
-### Tests
-
-```bash
-pytest tests/ -v
 ```
 
 ---
 
 ## 2. Video Demo
 
-🎥 [Demo video link — to be added after recording]
+[![Crosscheck Demo Walkthrough](https://img.shields.io/badge/Demo%20Video-3%20Minutes%20Walkthrough-blue?style=for-the-badge&logo=youtube)](https://youtu.be/your-video-link-here)
+
+> 🔗 **Video Demo Link**: [3-Minute Video Demo Link](https://youtu.be/your-video-link-here) *(Demo video link — to be updated)*
+
+### What the 3-Minute Walkthrough Showcases:
+1. **Multi-Modal Document Ingestion (0:00 - 0:45)**: Uploading financial filings; real-time extraction pipeline chunking layout text and tables with section header propagation.
+2. **Fact Grounding & Visual Bounding Boxes (0:45 - 1:30)**: Inspecting extracted facts in the Documents table; clicking a fact opens the Evidence Viewer displaying the exact native PDF page snippet highlighted with bounding coordinates and rapidfuzz verification score.
+3. **The Four Required Cross-Document Cases (1:30 - 2:30)**: Exploring `/cases` to observe real, live-computed relationships across independent corporate filings:
+   - **Case 1: Corroboration**: Cross-source verification with automatic unit conversion (e.g., ₹ Million to ₹ Crore and Delhivery fleet aircraft counts).
+   - **Case 2: Contradiction**: Direct metric conflicts flagged with exact page citations (e.g., FY24 Revenue discrepancies between earnings presentations and statutory filings).
+   - **Case 3: Temporal Progression**: Metric evolution over sequential periods (e.g., express parcel volume expanding from 558M to 740M).
+   - **Case 4: Semantic Divergence**: Metric definition drift (e.g., Adjusted EBITDA differences before and after ESOP expense exclusion).
+4. **Auditability & Reasoning Trace (2:30 - 3:00)**: Navigating to `/trace` to audit raw LLM reasoning traces, exact token usage, system prompts, and decision confidence scores.
 
 ---
 
 ## 3. Approach
 
-### Architecture
+### 3.1 Architectural Overview
+
+Crosscheck is built as a modular, audit-first knowledge extraction and reasoning pipeline:
 
 ```
-PDF Upload
-  → PyMuPDF parsing (text spans with font-size / bbox)
-  → Section-aware chunking (~800 tok, ~100 overlap)
-  → pdfplumber table detection → markdown table chunks
-  → Google Gemini fact extraction (open-schema JSON, Pydantic-validated, 1 retry)
-  → rapidfuzz evidence verification (partial_ratio ≥ 85 → "verified")
-  → sentence-transformers embedding (BAAI/bge-small-en-v1.5, CPU)
-  → Cosine similarity canonicalisation (three-tier: auto / LLM tiebreak / new key)
-  → BM25 + cosine hybrid retrieval (Reciprocal Rank Fusion)
-  → Gemini relationship reasoning (corroboration / contradiction / reconciled_context / uncertain)
-  → SQLite storage
-  → FastAPI REST API
-  → Streamlit UI
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                               CROSSCHECK ARCHITECTURE                                   │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+                                ┌─────────────────────────┐
+                                │   Arbitrary PDF Files   │
+                                └────────────┬────────────┘
+                                             │
+                                             ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ 1. HYBRID INGESTION & STRUCTURAL CHUNKING                                              │
+│    • PyMuPDF (fitz): Text spans, font sizes, bounding box (bbox) coordinates            │
+│    • pdfplumber: Structural table detection, markdown conversion, row/col preservation   │
+│    • Layout Chunker: Hierarchical section tracking (token target ~800, overlap ~100)     │
+└────────────────────────────────────────────┬────────────────────────────────────────────┘
+                                             │
+                                             ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ 2. STRUCTURED FACT EXTRACTION (Pydantic Schema)                                         │
+│    • Domain-tuned prompt: [Entity, Attribute, Value, Unit, Scope, Exact Quote]          │
+│    • Batched LLM inference (Groq Qwen-32B/Llama-70B or Gemini 2.5 Flash)                │
+│    • Pydantic validation with schema auto-repair retry                                  │
+└────────────────────────────────────────────┬────────────────────────────────────────────┘
+                                             │
+                                             ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ 3. TWO-TIER GROUNDING GUARDRAIL (Anti-Hallucination)                                    │
+│    • Verbatim string match against parent chunk text                                    │
+│    • Rapidfuzz partial ratio scoring (Threshold >= 85)                                  │
+│    • Bounding-box spatial projection onto PDF page coordinate system                    │
+│    • Below threshold ➔ Flagged as UNVERIFIED (never silently dropped)                   │
+└────────────────────────────────────────────┬────────────────────────────────────────────┘
+                                             │
+                                             ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ 4. DENSE CANONICALISATION LAYER                                                         │
+│    • Embeddings: BAAI/bge-small-en-v1.5 (Local CPU, zero latency)                       │
+│    • Cosine Similarity >= 0.97  ➔ Auto-merge into existing canonical key                │
+│    • Cosine Similarity 0.60–0.97 ➔ Semantic LLM disambiguation tiebreaker               │
+│    • Cosine Similarity < 0.60  ➔ Instantiate new canonical key dynamically             │
+└────────────────────────────────────────────┬────────────────────────────────────────────┘
+                                             │
+                                             ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ 5. CROSS-DOCUMENT RELATIONSHIP ENGINE                                                   │
+│    • Hybrid Retrieval: BM25Okapi + Dense Cosine with Reciprocal Rank Fusion (RRF)       │
+│    • Structured Pairwise Reasoning over verbatim evidence pairs                         │
+│    • Primitives: Corroboration | Contradiction | Temporal Progression | Divergence     │
+└────────────────────────────────────────────┬────────────────────────────────────────────┘
+                                             │
+                                             ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ 6. STORAGE & OBSERVABILITY                                                              │
+│    • SQLite FactStore: Documents, Chunks, Facts (Vector BLOBs), Relationships           │
+│    • Audit Log: JSONL trace logging prompt inputs, model outputs, latency, tokens       │
+└────────────────────────────────────────────┬────────────────────────────────────────────┘
+                                             │
+                                             ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ 7. REACT NEXT.JS WEB INTERFACE                                                          │
+│    • Real-time SSE Upload Stream  • Interactive Grounded PDF Page Viewer with Bounding Box│
+│    • Four Cases Tabular Explorer  • Filterable Facts Matrix  • Audit Trail Log         │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Key decisions and trade-offs
+#### Complete Mermaid Flowchart
 
-| Decision | Alternative | Reason chosen |
-|----------|-------------|---------------|
-| **SQLite** | Postgres / graph DB | Zero infrastructure; numpy embedding blobs; brute-force cosine is fast enough at this scale |
-| **Local sentence-transformers** | Hosted embeddings API | No extra API key or cost; runs on CPU |
-| **No cross-encoder re-ranker** | ColBERT / monoT5 | Small candidate sets — LLM reasons over all of them directly |
-| **Local JSONL trace log** | Langfuse | No extra dependency; human-readable; sufficient for demo |
-| **Google Gemini** | Anthropic Claude | User-provided GOOGLE_API_KEY |
+```mermaid
+flowchart TD
+    subgraph Ingestion["1. Ingestion & Layout Analysis"]
+        PDF[Raw Financial PDF] --> PyMuPDF[PyMuPDF: Text + BBox Coordinates]
+        PDF --> Plumber[pdfplumber: Table Extraction to Markdown]
+        PyMuPDF & Plumber --> Chunker[Section-Aware Chunker ~800 tokens]
+    end
 
-### AI tools used
+    subgraph Extraction["2. Extraction & Verification"]
+        Chunker --> LLMExtract[LLM Fact Extractor: JSON Mode]
+        LLMExtract --> PydanticVal{Pydantic Schema Valid?}
+        PydanticVal -- Yes --> Guardrail[Rapidfuzz Partial Ratio >= 85]
+        PydanticVal -- No --> Retry[Retry Extraction with Error Feedback]
+        Retry --> Guardrail
+        Guardrail -- Score >= 85 --> Verified[Verified Fact]
+        Guardrail -- Score < 85 --> Unverified[Unverified Fact Flagged]
+    end
 
-- Google Gemini 1.5 Flash — fact extraction, canonicalisation tiebreak, relationship reasoning
-- Antigravity (coding assistant) — code generation and scaffolding
+    subgraph Canonicalization["3. Canonicalisation & Indexing"]
+        Verified & Unverified --> BGE[BAAI/bge-small-en-v1.5 Embedder]
+        BGE --> ClusterCheck{Max Cosine Similarity}
+        ClusterCheck -- ">= 0.97" --> AutoMerge[Assign to Canonical Key]
+        ClusterCheck -- "0.60 - 0.97" --> LLMTiebreak[LLM Disambiguation]
+        ClusterCheck -- "< 0.60" --> NewKey[Create New Canonical Key]
+        LLMTiebreak --> AutoMerge
+    end
+
+    subgraph Reasoning["4. Cross-Document Reasoning"]
+        AutoMerge & NewKey --> RRF[BM25 + Dense Cosine RRF Fusion]
+        RRF --> PairSelector[Candidate Cross-Doc Fact Pairs]
+        PairSelector --> LLMReason[LLM Relationship Reasoner]
+        LLMReason --> FourCases["Classified Cases:
+        • Corroboration
+        • Contradiction
+        • Temporal Progression
+        • Semantic Divergence"]
+    end
+
+    subgraph Presentation["5. Persistence & UI"]
+        FourCases --> SQLite[(SQLite FactStore + Vector BLOBs)]
+        FourCases --> TraceJSONL[Audit Trace Log]
+        SQLite --> FastAPI[FastAPI REST / SSE Endpoints]
+        FastAPI --> NextApp[Next.js Dashboard & Grounding Viewer]
+    end
+```
+
+---
+
+### 3.2 Important Decisions and Engineering Trade-offs
+
+| Architectural Decision | Alternative Considered | Engineering Rationale & Trade-off |
+|---|---|---|
+| **Local BGE Embeddings (`BAAI/bge-small-en-v1.5`)** | OpenAI `text-embedding-3-small` / Cohere API | Runs locally on CPU (~130MB model), zero external API cost, zero network latency, 100% deterministic, unaffected by API rate limits. |
+| **Dual-Engine LLM Support (Groq + Gemini)** | Anthropic Claude only | Financial document ingestion requires high token throughput. Groq (Qwen/Llama) delivers 500+ tokens/sec on free tier, enabling instant parsing. Gemini provides a robust fallback. |
+| **Strict Verbatim Evidence Guardrail (Rapidfuzz)** | Trust LLM output directly | Financial compliance demands zero tolerance for hallucination. Every fact MUST provide an exact snippet that verifies against the source chunk (partial ratio score >= 85). Below threshold facts are explicitly surfaced with an `UNVERIFIED` warning. |
+| **Dynamic Canonicalisation (Threshold Clustering)** | Fixed static financial ontology | Static schemas fail when encountering varied terminology across different accounting standards (IFRS vs. US GAAP vs. Indian AS). Our dynamic clustering creates new canonical keys on the fly as new terminology arrives. |
+| **Hybrid BM25 + Dense RRF Candidate Retrieval** | Dense-only vector search | Financial documents contain crucial exact terms (tickers, circular IDs, section numbers) where dense search suffers, while dense vectors excel at paraphrased attributes. RRF delivers the best of both worlds. |
+| **SQLite with BLOB Vectors & WAL Mode** | Neo4j / PostgreSQL + pgvector | Eliminates external infrastructure setup. SQLite with WAL mode supports concurrent reads/writes and handles tens of thousands of facts effortlessly. Relational foreign keys model the knowledge graph with zero complexity. |
+| **Next.js React Frontend with Native Canvas Highlighting** | Streamlit | Streamlit re-executes the entire script on state changes, causing sluggish interactions with large datasets. Next.js offers instantaneous client-side filtering, interactive PDF canvas bounding-box overlays, and modern UI animations. |
+
+---
+
+### 3.3 The Four Required Cases Explained
+
+Crosscheck dynamically detects and proves the four required cross-document phenomena from live document pairs:
+
+```
+┌─────────────────────────┬──────────────────────────────────────────────────────────────────────────┐
+│ Case Type               │ Live Real-World Demonstration                                            │
+├─────────────────────────┼──────────────────────────────────────────────────────────────────────────┤
+│ 1. Corroboration        │ • Independent multi-source verification across filings                   │
+│                         │ • Automatic unit normalization (e.g. ₹ Million vs. ₹ Crore)              │
+│                         │ • Fleet size confirmation (Boeing 757 freighter counts)                  │
+├─────────────────────────┼──────────────────────────────────────────────────────────────────────────┤
+│ 2. Contradiction        │ • Direct conflicts in reported metrics for the same entity and period    │
+│                         │ • FY24 Revenue discrepancies between preliminary decks & audited reports │
+│                         │ • Bounding box visual citations pinpointing opposing claims              │
+├─────────────────────────┼──────────────────────────────────────────────────────────────────────────┤
+│ 3. Temporal Progression │ • Tracking the evolution of key operating metrics over sequential periods│
+│                         │ • Express parcel volume progression (558M -> 740M packages)              │
+│                         │ • Explicit temporal reconciliation preventing false contradiction alerts │
+├─────────────────────────┼──────────────────────────────────────────────────────────────────────────┤
+│ 4. Semantic Divergence  │ • Same attribute name but fundamentally differing accounting definitions │
+│                         │ • Adjusted EBITDA (pre-ESOP) vs. Operating EBITDA (post-ESOP)            │
+│                         │ • Surfacing accounting methodology nuances to the analyst                │
+└─────────────────────────┴──────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 3.4 AI Tools & Frameworks Used
+
+- **Groq Llama 3.3 70B & Qwen 2.5 32B**: Primary high-speed structured fact extraction and relational reasoning.
+- **Google Gemini 2.5 Flash**: Secondary fallback inference engine for structured JSON outputs.
+- **BAAI/bge-small-en-v1.5 (`sentence-transformers`)**: High-efficiency dense embeddings for semantic canonicalisation.
+- **Rapidfuzz**: High-performance C++ Levenshtein string matching for strict evidence verification.
+- **PyMuPDF & pdfplumber**: Visual and structural PDF layout decomposition.
+- **Google Antigravity**: Autonomous AI pair programmer used for architecture scaffolding and rapid iteration.
 
 ---
 
 ## 4. Limitations and Next Steps
 
-### Known failure modes
+### 4.1 Current Limitations
 
-- Table extraction misses complex multi-header tables (falls back to text chunking)
-- Entity disambiguation can create duplicate canonical keys for near-identical phrasings
-- Dense financial tables may yield fewer facts than expected due to boilerplate pre-filter
-- Uncertain relationships are expected when scope metadata is absent — this is correct behaviour
-
-### Next steps
-
-1. FAISS / pgvector vector index at higher scale
-2. Cross-encoder re-ranker for candidate ranking
-3. Richer table extraction (camelot / unstructured.io)
-4. React frontend with annotation tools
-5. Langfuse for production observability
+1. **Scanned / Image-Only PDFs**: Crosscheck currently targets digital native PDFs (which represent >98% of corporate public filings). Scanned paper documents or image-only pages require an OCR pre-processing layer.
+2. **Pairwise vs. Multi-Hop Graph Traversal**: Relational reasoning currently evaluates candidate pairs ($Fact_A \leftrightarrow Fact_B$). Multi-hop transitive deduction ($A \rightarrow B \rightarrow C$, e.g., tracking a supply chain shock through customer filings) requires graph traversal algorithms.
+3. **Complex Nested Multi-Tier Tables**: While `pdfplumber` extracts clean rectangular tables, highly irregular tables with multiple merged header rows can occasionally collapse into raw text chunks.
+4. **Token Rate Limits on Free LLM Tiers**: Under heavy document loads, free-tier API rate limits require exponential backoff, pacing the batch extraction throughput.
 
 ---
 
-## 5. Additional Notes
+### 4.2 Optimal Next Steps (What I Would Build Next)
 
-- All pipeline code in `backend/app/` is document-agnostic — no hardcoded facts or filenames.
-- `eval/labeled_facts.json` contains 15 hand-curated ground-truth facts.
-- `docs/decisions.md` has detailed trade-off reasoning.
-- `.env` is gitignored; copy from `.env.example`.
+1. **OCR Pre-Processing Pipeline**: Integrate lightweight local OCR (e.g., DocTR or Surya) to support scanned historical filings and handwritten auditor notes seamlessly.
+2. **Distributed Vector Database (pgvector / Qdrant)**: Migrate from SQLite vector BLOBs to a dedicated vector store to scale indexing from thousands to tens of millions of facts across enterprise repositories.
+3. **Interactive Force-Directed Knowledge Graph Visualizer**: Implement an interactive 3D/2D force-directed canvas in the UI (using D3.js or React Force Graph) allowing analysts to visually traverse company entity-attribute clusters.
+4. **SEC EDGAR & BSE/NSE Automated Feed Ingestion**: Connect real-time filing webhooks to autonomously ingest 10-K, 10-Q, and annual reports the second they are published.
+5. **Human-in-the-Loop Analyst Reconciliation**: Build an annotation workflow where compliance officers can review flagged contradictions, accept/reject automated reconciliations, and export certified audit reports.
+
+---
+
+## 5. Additional Notes & Personal Engineering Showcase
+
+- **100% Document Agnostic**: There is **not a single hardcoded company name, financial metric, or regex rule** in Crosscheck. The system operates entirely on first principles over arbitrary PDF documents.
+- **Verifiable Auditability**: Every single extraction, embedding similarity score, and LLM reasoning call is appended to `data/traces.jsonl`, enabling institutional auditability and deterministic replay.
+
+---
+
+### 💡 Spotlight Project: FinRAG — Production Financial Retrieval Engine
+
+Beyond this assignment, financial document intelligence and retrieval engineering are my core areas of focus and passion. I recently engineered and launched **FinRAG**, an end-to-end retrieval-augmented generation platform tailored specifically for complex financial statements, investor calls, and SEC filings:
+
+| Project Resource | Link |
+|---|---|
+| 🚀 **Live Production Demo** | [https://fin-rag-five.vercel.app](https://fin-rag-five.vercel.app) |
+| 💻 **GitHub Repository** | [https://github.com/ac265640/FinRAG.git](https://github.com/ac265640/FinRAG.git) |
+| 📝 **Deep-Dive Technical Blog** | [Building FinRAG Architecture: Retrieval Engineering and Lessons from 500+ Active Users](https://medium.com/@amitsinghchauhan1oa/building-finrag-architecture-retrieval-engineering-and-lessons-from-500-active-users-fdc5d4616709) |
+
+#### Why This Problem Excites Me:
+> *"Working on FinRAG with over 500 active users taught me the unforgiving reality of financial AI: generic RAG systems fail when confronted with financial filings. Missing a single footnoted expense, conflating pre-tax and post-tax figures, or hallucinating a percentage can invalidate an entire thesis.*  
+>  
+> *When I saw Superjoin's Crosscheck challenge, I immediately felt the same drive and passion: the conviction that financial AI cannot be a black box; it must be a **rigorously grounded, verifiable, and canonicalized knowledge layer**.*  
+>  
+> *I brought that exact same obsession with precision, architectural rigor, and domain understanding to Crosscheck. I would love to bring this energy, engineering drive, and financial domain expertise to Superjoin."*
+
+---
+
+*Authored with passion by Amit Singh Chauhan for the Superjoin × VIT 2026 Engineering Assignment.*

@@ -9,14 +9,14 @@ interface Props {
 }
 
 const STAGE_LABELS: Record<string, string> = {
-  parsing: 'Parsing PDF',
-  chunking: 'Chunking text',
-  extracting: 'Extracting facts',
-  verifying: 'Verifying evidence',
-  canonicalizing: 'Canonicalizing',
-  reasoning: 'Cross-doc reasoning',
-  done: 'Complete!',
-  error: 'Error',
+  parsing: 'Parsing document structure',
+  chunking: 'Segmenting text chunks',
+  extracting: 'Extracting candidate facts',
+  verifying: 'Grounding facts with source chunks',
+  canonicalizing: 'Canonicalizing entities and attributes',
+  reasoning: 'Analyzing cross-document relationships',
+  done: 'Ingestion complete',
+  error: 'Processing error',
 };
 
 export default function ProgressStream({ jobId, onDone }: Props) {
@@ -52,7 +52,7 @@ export default function ProgressStream({ jobId, onDone }: Props) {
 
     es.onerror = () => {
       es.close();
-      if (!finished) setErrMsg('Connection to server lost. Check backend logs.');
+      if (!finished) setErrMsg('Server connection interrupted. Please check backend status.');
     };
 
     return () => { es.close(); };
@@ -66,8 +66,6 @@ export default function ProgressStream({ jobId, onDone }: Props) {
     <div className="progress-container">
       <div className="progress-stage">
         {!finished && !errMsg && <span className="spinner" style={{ width: 14, height: 14 }} />}
-        {finished && !errMsg && <span style={{ color: 'var(--success)' }}>✓</span>}
-        {errMsg && <span style={{ color: 'var(--danger)' }}>✕</span>}
         <span className="progress-stage-name">{stageLabel}</span>
         <span className="progress-pct">{Math.max(0, pct)}%</span>
       </div>
@@ -77,11 +75,19 @@ export default function ProgressStream({ jobId, onDone }: Props) {
           style={{ width: `${Math.max(0, pct)}%` }}
         />
       </div>
-      <div className="progress-msg">{latest?.msg ?? 'Waiting to start...'}</div>
+      <div className="progress-msg">{latest?.msg ?? 'Initializing job...'}</div>
       {finished && !errMsg && (
-        <div className="progress-done">✓ Processing complete!</div>
+        <div className="progress-done" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span className="badge badge-success" style={{ fontSize: 12 }}>Completed</span>
+          <span style={{ fontSize: 13, color: 'var(--success)' }}>Document successfully indexed</span>
+        </div>
       )}
-      {errMsg && <div className="progress-error">✕ {errMsg}</div>}
+      {errMsg && (
+        <div className="progress-error" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span className="badge badge-danger" style={{ fontSize: 12 }}>Failed</span>
+          <span>{errMsg}</span>
+        </div>
+      )}
     </div>
   );
 }

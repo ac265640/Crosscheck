@@ -141,13 +141,13 @@ def run_eval() -> None:
     print("-" * 60)
 
     if missed_labels:
-        print(f"\n❌ MISSES ({len(missed_labels)} labeled facts the pipeline didn't find):")
+        print(f"\n[MISSES] ({len(missed_labels)} labeled facts the pipeline didn't find):")
         for label in missed_labels:
-            print(f"  • {label['entity']} / {label['attribute']} = {label['value']} {label.get('unit', '')}")
+            print(f"  - {label['entity']} / {label['attribute']} = {label['value']} {label.get('unit', '')}")
 
-    print("\n✅ MATCHED:")
+    print("\n[MATCHED]:")
     for label in matched_labels:
-        print(f"  • {label['entity']} / {label['attribute']} = {label['value']} {label.get('unit', '')}")
+        print(f"  - {label['entity']} / {label['attribute']} = {label['value']} {label.get('unit', '')}")
 
     print("\n" + "=" * 60)
     print("Eval complete.")

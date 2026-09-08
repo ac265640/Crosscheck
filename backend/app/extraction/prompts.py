@@ -2,6 +2,12 @@
 Prompt templates for the LLM fact extraction step.
 These are verbatim from Appendix A of the spec.
 Only modify these if a concrete failure mode is observed — document any changes in docs/decisions.md.
+
+Batch extraction variant added to reduce API round-trips:
+  - FACT_EXTRACTION_BATCH_SYSTEM_PROMPT handles N chunks per LLM call
+  - Each chunk is labelled [CHUNK_N] and facts carry a chunk_index field
+  - Reduces API calls ~6x vs one-per-chunk, keeping total time under 3 min/PDF
+  - Documented in docs/decisions.md
 """
 
 from __future__ import annotations
@@ -66,6 +72,55 @@ described above (entity, attribute, value, unit, scope, verbatim_evidence).
 No prose, no markdown code fences, no commentary before or after the JSON."""
 
 
+# ── Batched extraction (N chunks per LLM call) ────────────────────────────────
+
+FACT_EXTRACTION_BATCH_SYSTEM_PROMPT = """You are a fact-extraction engine for a fact knowledge layer system. You will be
+given MULTIPLE chunks of text from a PDF document. Each chunk is labelled
+[CHUNK_N] with its section title and page number. Your job is to extract every
+distinct, checkable factual claim from ALL chunks as a single structured list.
+
+Rules (identical to single-chunk mode, plus one addition):
+
+1. Do not force facts into any predefined category. Extract whatever the text
+   actually states as a checkable claim: a financial figure, a date, a status
+   change, a named person's role, a percentage, a count, an address, a policy
+   figure — whatever is genuinely present as a verifiable statement.
+
+2. Every fact must include a "verbatim_evidence" field that is an EXACT,
+   character-for-character substring of the chunk's text. Do not paraphrase,
+   do not fix typos or spacing, do not normalize numbers or wording. If you
+   cannot find an exact quotable substring supporting a claim, do not extract
+   that claim at all.
+
+3. "entity": the real-world subject of the fact. Use the most complete,
+   unambiguous name available in the text.
+
+4. "attribute": what property or metric of the entity this fact describes,
+   in concise words.
+
+5. "value": the stated value, always as a string.
+
+6. "unit": the unit if applicable, or null.
+
+7. "scope": a JSON object of qualifiers present in the text. Use {} if none.
+
+8. "chunk_index": REQUIRED — the integer N from the [CHUNK_N] label this fact
+   came from. This is how facts are mapped back to their source chunk. If a
+   fact spans two chunks, use the chunk where the verbatim_evidence appears.
+
+9. If the same underlying fact is restated in the same chunk, extract it once.
+
+10. Skip boilerplate: disclaimers, safe-harbor statements, table-of-contents,
+    page headers/footers, and pure formatting artifacts are not facts.
+
+11. If a chunk contains no checkable factual claims, produce no entries for it.
+    An empty list is a valid and expected output if no chunks contain facts.
+
+Output must be valid JSON only: a list of objects with exactly these fields:
+entity, attribute, value, unit, scope, verbatim_evidence, chunk_index.
+No prose, no markdown fences, no commentary before or after the JSON."""
+
+
 def build_extraction_user_message(
     document_filename: str,
     section_title: str | None,
@@ -82,6 +137,31 @@ Text:
 {chunk_text}
 
 Extract all factual claims from this text following the system instructions."""
+
+    if validation_error:
+        base += f"\n\nYour previous response failed validation with this error: {validation_error}. Return corrected JSON only."
+
+    return base
+
+
+def build_batch_extraction_user_message(
+    document_filename: str,
+    chunks: list[tuple[int, str | None, int, str]],  # [(chunk_index, section, page, text), ...]
+    validation_error: str | None = None,
+) -> str:
+    """
+    Build a user message containing multiple labelled chunks.
+    chunks: list of (chunk_index, section_title, page_number, text)
+    """
+    parts = [f"Document: {document_filename}\n"]
+    for idx, section, page, text in chunks:
+        section_str = section or "unknown"
+        parts.append(
+            f"[CHUNK_{idx}] Section: {section_str} | Page: {page}\n{text}"
+        )
+
+    base = "\n\n".join(parts)
+    base += "\n\nExtract all factual claims from ALL chunks above following the system instructions. Include chunk_index in each fact."
 
     if validation_error:
         base += f"\n\nYour previous response failed validation with this error: {validation_error}. Return corrected JSON only."

@@ -28,7 +28,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from backend.app.canonicalization.canonicalizer import canonicalize_fact
 from backend.app.canonicalization.embedder import embed_text
 from backend.app.config import DB_PATH
-from backend.app.extraction.fact_extractor import extract_facts_from_chunk
+from backend.app.extraction.fact_extractor import extract_facts_from_chunks
 from backend.app.guardrails.evidence_verifier import verify_fact_evidence
 from backend.app.ingestion.chunker import chunk_document
 from backend.app.ingestion.pdf_parser import parse_pdf
@@ -55,18 +55,18 @@ UPLOAD_DIR = Path("data/uploads")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 STARTER_PDFS = [
-    Path("starter-datasets/delhivery/01-delhivery-prospectus-2022-excerpt.pdf"),
-    Path("starter-datasets/delhivery/02-delhivery-annual-report-fy24-excerpt.pdf"),
     Path("starter-datasets/delhivery/03-delhivery-q4-fy24-earnings-presentation.pdf"),
-    Path("starter-datasets/india-macroeconomy/01-india-economic-survey-2024-25-excerpt.pdf"),
     Path("starter-datasets/india-macroeconomy/02-rbi-annual-report-2024-25-excerpt.pdf"),
     Path("starter-datasets/india-macroeconomy/03-imf-india-2025-article-iv-excerpt.pdf"),
+    Path("starter-datasets/india-macroeconomy/01-india-economic-survey-2024-25-excerpt.pdf"),
+    Path("starter-datasets/delhivery/01-delhivery-prospectus-2022-excerpt.pdf"),
+    Path("starter-datasets/delhivery/02-delhivery-annual-report-fy24-excerpt.pdf"),
 ]
 
 
 def ingest_pdf(pdf_path: Path) -> dict:
     filename = pdf_path.name
-    print(f"\n→ Ingesting: {filename}")
+    print(f"\n-> Ingesting: {filename}")
 
     if not pdf_path.exists():
         print(f"  SKIP — file not found: {pdf_path}")
@@ -119,27 +119,22 @@ def ingest_pdf(pdf_path: Path) -> dict:
     chunk_text_map = {c.id: c.text for c in all_chunks}
     print(f"  {len(all_chunks)} chunks created.")
 
-    # 4. Fact extraction (concurrent)
-    print("  Extracting facts (concurrent, may take a while) …")
-    with ThreadPoolExecutor(max_workers=2) as executor:
-        chunk_facts_list = list(
-            executor.map(lambda c: extract_facts_from_chunk(c, filename), all_chunks)
-        )
-
+    # 4. Fact extraction (batched — fewer LLM calls, faster)
+    print("  Extracting facts (batched LLM calls)...")
     all_facts = []
-    for facts in chunk_facts_list:
-        for fact in facts:
-            fact = verify_fact_evidence(fact, chunk_text_map.get(fact.chunk_id, ""))
-            if fact.verification_status != "extraction_failed":
-                emb = embed_text(f"{fact.entity} {fact.attribute}: {fact.value}")
-            else:
-                emb = None
-            insert_fact(fact, emb, DB_PATH)
-            all_facts.append(fact)
+    chunk_facts = extract_facts_from_chunks(all_chunks, filename)
+    for fact in chunk_facts:
+        fact = verify_fact_evidence(fact, chunk_text_map.get(fact.chunk_id, ""))
+        if fact.verification_status != "extraction_failed":
+            emb = embed_text(f"{fact.entity} {fact.attribute}: {fact.value}")
+        else:
+            emb = None
+        insert_fact(fact, emb, DB_PATH)
+        all_facts.append(fact)
     print(f"  {len(all_facts)} facts extracted.")
 
     # 5. Canonicalize
-    print("  Canonicalizing …")
+    print("  Canonicalizing...")
     for fact in all_facts:
         if fact.verification_status != "extraction_failed":
             chunk = get_chunk(fact.chunk_id, DB_PATH)
@@ -147,7 +142,7 @@ def ingest_pdf(pdf_path: Path) -> dict:
             fact.canonical_key = canonicalize_fact(fact, chunk_text)
 
     # 6. Relationship reasoning
-    print("  Reasoning about cross-document relationships …")
+    print("  Reasoning about cross-document relationships...")
     valid_facts = [f for f in all_facts if f.verification_status != "extraction_failed"]
     with ThreadPoolExecutor(max_workers=3) as executor:
         rel_lists = list(executor.map(lambda f: reason_about_fact(f, DB_PATH), valid_facts))
@@ -157,7 +152,7 @@ def ingest_pdf(pdf_path: Path) -> dict:
     elapsed = time.monotonic() - t0
     counts = count_facts_for_document(doc_id, DB_PATH)
     print(
-        f"  ✓ done in {elapsed:.1f}s | facts={len(all_facts)} "
+        f"  DONE in {elapsed:.1f}s | facts={len(all_facts)} "
         f"(verified={counts.get('verified',0)}, unverified={counts.get('unverified',0)}, "
         f"failed={counts.get('extraction_failed',0)}) | relationships={len(new_rels)}"
     )
@@ -167,7 +162,7 @@ def ingest_pdf(pdf_path: Path) -> dict:
 def main() -> None:
     init_db(DB_PATH)
     project_root = Path(__file__).resolve().parents[1]
-    print(f"Seeding {len(STARTER_PDFS)} PDFs from {project_root} …")
+    print(f"Seeding {len(STARTER_PDFS)} PDFs from {project_root}...")
 
     totals = {"facts": 0, "relationships": 0}
     for rel_pdf in STARTER_PDFS:

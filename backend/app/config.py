@@ -20,14 +20,14 @@ load_dotenv(PROJECT_ROOT / ".env")
 
 # ── Google Gemini ──────────────────────────────────────────────────────────────
 GOOGLE_API_KEY: str = os.getenv("GOOGLE_API_KEY", "")
-GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite-preview-06-17")
+GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite")
 # Fallback chain: if primary model hits quota (429), try these in order
 # All must be valid Gemini model IDs; configurable via env
 _fallback_env = os.getenv("FALLBACK_MODELS", "")
 FALLBACK_MODELS: list[str] = (
     [m.strip() for m in _fallback_env.split(",") if m.strip()]
     if _fallback_env
-    else [GEMINI_MODEL, "gemini-2.0-flash", "gemini-1.5-flash"]
+    else [GEMINI_MODEL, "gemini-2.5-flash", "gemini-2.5-flash-lite"]
 )
 
 # ── Embedding model (local, CPU) ───────────────────────────────────────────────
@@ -36,6 +36,12 @@ EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "BAAI/bge-small-en-v1.5")
 # ── Chunking ───────────────────────────────────────────────────────────────────
 MAX_CHUNK_TOKENS: int = int(os.getenv("MAX_CHUNK_TOKENS", "800"))
 CHUNK_OVERLAP_TOKENS: int = int(os.getenv("CHUNK_OVERLAP_TOKENS", "100"))
+
+# ── Extraction batching ────────────────────────────────────────────────────────
+# How many chunks to send in a single LLM call.
+# Higher = fewer API calls (faster, less quota pressure); lower = smaller prompts.
+# 6 is a safe default: ~4800 tokens of chunk text + prompt fits well within limits.
+EXTRACTION_BATCH_SIZE: int = int(os.getenv("EXTRACTION_BATCH_SIZE", "6"))
 
 # ── Canonicalization thresholds ────────────────────────────────────────────────
 CANON_AUTO_THRESHOLD: float = float(os.getenv("CANON_AUTO_THRESHOLD", "0.92"))

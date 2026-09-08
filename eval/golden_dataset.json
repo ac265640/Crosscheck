@@ -1,0 +1,284 @@
+{
+  "metadata": {
+    "description": "Curated golden evaluation dataset for the Fact Knowledge Layer system.",
+    "version": "1.0.0",
+    "fact_count": 20,
+    "relationship_case_count": 4
+  },
+  "facts": [
+    {
+      "id": "gold-fact-01",
+      "entity": "Delhivery Limited",
+      "attribute": "Revenue from contracts with customers",
+      "value": "8,142",
+      "unit": "₹ Cr",
+      "scope": {"period": "FY24", "basis": "consolidated"},
+      "verbatim_evidence": "Revenue from contracts with customers was ₹ 8,142 Cr in FY24",
+      "document_filename": "02-delhivery-annual-report-fy24-excerpt.pdf",
+      "page_number": 12,
+      "canonical_key": "delhivery_limited::revenue_from_contracts_with_customers_fy24"
+    },
+    {
+      "id": "gold-fact-02",
+      "entity": "Delhivery Limited",
+      "attribute": "Revenue from operations",
+      "value": "8,142",
+      "unit": "₹ Cr",
+      "scope": {"period": "FY24", "basis": "consolidated"},
+      "verbatim_evidence": "Revenue from operations reached ₹8,142 Cr in FY24",
+      "document_filename": "03-delhivery-q4-fy24-earnings-presentation.pdf",
+      "page_number": 5,
+      "canonical_key": "delhivery_limited::revenue_from_contracts_with_customers_fy24"
+    },
+    {
+      "id": "gold-fact-03",
+      "entity": "Delhivery Limited",
+      "attribute": "Revenue from contracts with customers",
+      "value": "7,225",
+      "unit": "₹ Cr",
+      "scope": {"period": "FY23", "basis": "consolidated"},
+      "verbatim_evidence": "Revenue from contracts with customers was ₹ 7,225 Cr in FY23",
+      "document_filename": "02-delhivery-annual-report-fy24-excerpt.pdf",
+      "page_number": 12,
+      "canonical_key": "delhivery_limited::revenue_from_contracts_with_customers_fy23"
+    },
+    {
+      "id": "gold-fact-04",
+      "entity": "Delhivery Limited",
+      "attribute": "number of Active Customers",
+      "value": "23,113",
+      "unit": "customers",
+      "scope": {"as_of": "December 31, 2021", "period": "nine months ended December 31, 2021"},
+      "verbatim_evidence": "number of Active Customers stood at 23,113 for the nine months ended December 31, 2021",
+      "document_filename": "01-delhivery-prospectus-2022-excerpt.pdf",
+      "page_number": 28,
+      "canonical_key": "delhivery_limited::active_customers"
+    },
+    {
+      "id": "gold-fact-05",
+      "entity": "Delhivery Limited",
+      "attribute": "active customers count",
+      "value": "33,000",
+      "unit": "customers",
+      "scope": {"as_of": "March 31, 2024"},
+      "verbatim_evidence": "active customers count expanded to over 33,000 as of March 31, 2024",
+      "document_filename": "02-delhivery-annual-report-fy24-excerpt.pdf",
+      "page_number": 15,
+      "canonical_key": "delhivery_limited::active_customers"
+    },
+    {
+      "id": "gold-fact-06",
+      "entity": "Delhivery Limited",
+      "attribute": "Adjusted EBITDA margin",
+      "value": "2.2%",
+      "unit": "%",
+      "scope": {"period": "Q4 FY24"},
+      "verbatim_evidence": "Adjusted EBITDA margin stood at 2.2% in Q4 FY24",
+      "document_filename": "03-delhivery-q4-fy24-earnings-presentation.pdf",
+      "page_number": 8,
+      "canonical_key": "delhivery_limited::adjusted_ebitda_margin_q4_fy24"
+    },
+    {
+      "id": "gold-fact-07",
+      "entity": "Delhivery Limited",
+      "attribute": "Express parcel shipment volume",
+      "value": "740",
+      "unit": "million",
+      "scope": {"period": "FY24"},
+      "verbatim_evidence": "Express parcel shipment volume reached 740 million in FY24",
+      "document_filename": "03-delhivery-q4-fy24-earnings-presentation.pdf",
+      "page_number": 9,
+      "canonical_key": "delhivery_limited::express_parcel_volume_fy24"
+    },
+    {
+      "id": "gold-fact-08",
+      "entity": "Delhivery Limited",
+      "attribute": "Express parcel shipment volume",
+      "value": "663",
+      "unit": "million",
+      "scope": {"period": "FY23"},
+      "verbatim_evidence": "Express parcel shipment volume was 663 million in FY23",
+      "document_filename": "03-delhivery-q4-fy24-earnings-presentation.pdf",
+      "page_number": 9,
+      "canonical_key": "delhivery_limited::express_parcel_volume_fy23"
+    },
+    {
+      "id": "gold-fact-09",
+      "entity": "Delhivery Limited",
+      "attribute": "automated sortation centres",
+      "value": "21",
+      "unit": "centres",
+      "scope": {"as_of": "December 31, 2021"},
+      "verbatim_evidence": "operated 21 automated sortation centres as of December 31, 2021",
+      "document_filename": "01-delhivery-prospectus-2022-excerpt.pdf",
+      "page_number": 32,
+      "canonical_key": "delhivery_limited::automated_sortation_centres"
+    },
+    {
+      "id": "gold-fact-10",
+      "entity": "Delhivery Limited",
+      "attribute": "automated sortation centres count",
+      "value": "29",
+      "unit": "centres",
+      "scope": {"as_of": "March 31, 2024"},
+      "verbatim_evidence": "expanded to 29 automated sortation centres count as of March 31, 2024",
+      "document_filename": "02-delhivery-annual-report-fy24-excerpt.pdf",
+      "page_number": 18,
+      "canonical_key": "delhivery_limited::automated_sortation_centres"
+    },
+    {
+      "id": "gold-fact-11",
+      "entity": "Delhivery Limited",
+      "attribute": "Rated Automated Sort Capacity",
+      "value": "3.70 million",
+      "unit": "shipments per day",
+      "scope": {"as_of": "December 31, 2021"},
+      "verbatim_evidence": "Rated Automated Sort Capacity was 3.70 million shipments per day as of December 31, 2021",
+      "document_filename": "01-delhivery-prospectus-2022-excerpt.pdf",
+      "page_number": 35,
+      "canonical_key": "delhivery_limited::rated_sort_capacity"
+    },
+    {
+      "id": "gold-fact-12",
+      "entity": "Delhivery Limited",
+      "attribute": "Rated Automated Sort Capacity",
+      "value": "7.1 million",
+      "unit": "shipments per day",
+      "scope": {"as_of": "March 31, 2024"},
+      "verbatim_evidence": "Rated Automated Sort Capacity reached 7.1 million shipments per day as of March 31, 2024",
+      "document_filename": "03-delhivery-q4-fy24-earnings-presentation.pdf",
+      "page_number": 11,
+      "canonical_key": "delhivery_limited::rated_sort_capacity"
+    },
+    {
+      "id": "gold-fact-13",
+      "entity": "Delhivery Limited",
+      "attribute": "number of gateways",
+      "value": "82",
+      "unit": "gateways",
+      "scope": {"as_of": "December 31, 2021"},
+      "verbatim_evidence": "number of gateways was 82 as of December 31, 2021",
+      "document_filename": "01-delhivery-prospectus-2022-excerpt.pdf",
+      "page_number": 36,
+      "canonical_key": "delhivery_limited::gateways_count"
+    },
+    {
+      "id": "gold-fact-14",
+      "entity": "Delhivery Limited",
+      "attribute": "number of gateways",
+      "value": "123",
+      "unit": "gateways",
+      "scope": {"period": "Q4 FY24"},
+      "verbatim_evidence": "total number of gateways stood at 123 in Q4 FY24",
+      "document_filename": "03-delhivery-q4-fy24-earnings-presentation.pdf",
+      "page_number": 12,
+      "canonical_key": "delhivery_limited::gateways_count"
+    },
+    {
+      "id": "gold-fact-15",
+      "entity": "India",
+      "attribute": "real GDP growth rate estimate",
+      "value": "7.2",
+      "unit": "%",
+      "scope": {"period": "FY25", "institution": "RBI"},
+      "verbatim_evidence": "real GDP growth for 2024-25 is projected at 7.2 per cent",
+      "document_filename": "02-rbi-annual-report-2024-25-excerpt.pdf",
+      "page_number": 31,
+      "canonical_key": "india::real_gdp_growth_rate_fy25"
+    },
+    {
+      "id": "gold-fact-16",
+      "entity": "India",
+      "attribute": "real GDP growth rate estimate",
+      "value": "6.5",
+      "unit": "%",
+      "scope": {"period": "FY25", "institution": "IMF"},
+      "verbatim_evidence": "real GDP growth is projected at 6.5 percent in FY2024/25",
+      "document_filename": "03-imf-india-2025-article-iv-excerpt.pdf",
+      "page_number": 8,
+      "canonical_key": "india::real_gdp_growth_rate_fy25"
+    },
+    {
+      "id": "gold-fact-17",
+      "entity": "India",
+      "attribute": "foreign exchange reserves",
+      "value": "640.3",
+      "unit": "USD billion",
+      "scope": {"as_of": "end of December 2024"},
+      "verbatim_evidence": "India's foreign exchange reserves stood at USD 640.3 billion at end-December 2024",
+      "document_filename": "01-india-economic-survey-2024-25-excerpt.pdf",
+      "page_number": 52,
+      "canonical_key": "india::foreign_exchange_reserves_dec_2024"
+    },
+    {
+      "id": "gold-fact-18",
+      "entity": "India",
+      "attribute": "current account deficit as percent of GDP",
+      "value": "1.2",
+      "unit": "%",
+      "scope": {"period": "Q2 FY25"},
+      "verbatim_evidence": "current account deficit moderated to 1.2 per cent of GDP in Q2:2024-25",
+      "document_filename": "02-rbi-annual-report-2024-25-excerpt.pdf",
+      "page_number": 45,
+      "canonical_key": "india::current_account_deficit_q2_fy25"
+    },
+    {
+      "id": "gold-fact-19",
+      "entity": "India",
+      "attribute": "current account deficit as percent of GDP",
+      "value": "1.3",
+      "unit": "%",
+      "scope": {"period": "Q2 FY24"},
+      "verbatim_evidence": "CAD was 1.3 per cent of GDP in Q2 of the preceding year",
+      "document_filename": "02-rbi-annual-report-2024-25-excerpt.pdf",
+      "page_number": 45,
+      "canonical_key": "india::current_account_deficit_q2_fy24"
+    },
+    {
+      "id": "gold-fact-20",
+      "entity": "India",
+      "attribute": "merchandise trade deficit",
+      "value": "75.3",
+      "unit": "USD billion",
+      "scope": {"period": "Q2 FY25"},
+      "verbatim_evidence": "merchandise trade deficit widened to USD 75.3 billion during Q2:2024-25",
+      "document_filename": "01-india-economic-survey-2024-25-excerpt.pdf",
+      "page_number": 58,
+      "canonical_key": "india::merchandise_trade_deficit_q2_fy25"
+    }
+  ],
+  "relationship_cases": {
+    "corroboration": {
+      "name": "Delhivery FY24 Revenue Corroboration",
+      "relationship_type": "corroboration",
+      "fact_a_id": "gold-fact-01",
+      "fact_b_id": "gold-fact-02",
+      "expected_outcome": "corroboration",
+      "expected_reasoning": "Both documents state that Delhivery's FY24 revenue was 8,142 Cr INR. Fact A (Annual Report) cites revenue from contracts with customers as 8,142 Cr and Fact B (Earnings Presentation) cites revenue from operations as 8,142 Cr for the identical period and consolidated basis."
+    },
+    "contradiction": {
+      "name": "India FY25 Real GDP Growth Rate Forecast Disagreement",
+      "relationship_type": "contradiction",
+      "fact_a_id": "gold-fact-15",
+      "fact_b_id": "gold-fact-16",
+      "expected_outcome": "contradiction",
+      "expected_reasoning": "Fact A from the RBI Annual Report projects real GDP growth of 7.2% for FY25, whereas Fact B from the IMF Article IV staff report projects real GDP growth of 6.5% for the same FY25 period. These are conflicting numerical projections for the exact same macroeconomic indicator and fiscal year."
+    },
+    "reconciled_context": {
+      "name": "Delhivery Active Customer Base Growth (Temporal Reconciliation)",
+      "relationship_type": "reconciled_context",
+      "fact_a_id": "gold-fact-04",
+      "fact_b_id": "gold-fact-05",
+      "expected_outcome": "reconciled_context",
+      "expected_reasoning": "Fact A reports 23,113 active customers as of December 31, 2021 (from the 2022 Prospectus), while Fact B reports 33,000 active customers as of March 31, 2024 (from the FY24 Annual Report). Although the numbers differ significantly, the discrepancy is reconciled by the differing temporal scopes representing business expansion over a 2.25-year interval."
+    },
+    "uncertain": {
+      "name": "Sortation Capacity Without Standardized Scope Context",
+      "relationship_type": "uncertain",
+      "fact_a_id": "gold-fact-11",
+      "fact_b_id": "gold-fact-12",
+      "expected_outcome": "uncertain",
+      "expected_reasoning": "Fact A reports sort capacity of 3.70 million shipments/day and Fact B reports 7.1 million shipments/day. If evaluated in isolation without explicit date or temporal metadata in the prompt, there is insufficient contextual information to determine whether this represents a revised methodology, expansion, or a measurement error."
+    }
+  }
+}

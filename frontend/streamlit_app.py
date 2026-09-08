@@ -29,6 +29,196 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* ── Global ── */
+html, body, [class*="css"] {
+    font-family: 'Inter', sans-serif !important;
+}
+
+/* Main content area */
+.main .block-container {
+    padding: 2rem 2.5rem 3rem 2.5rem;
+    max-width: 1200px;
+}
+
+/* ── Sidebar ── */
+[data-testid="stSidebar"] {
+    background: #EDE0D4 !important;
+    border-right: 1px solid #D9C8B8;
+}
+[data-testid="stSidebar"] > div:first-child {
+    padding: 1.5rem 1.2rem;
+}
+[data-testid="stSidebar"] h1 {
+    font-size: 1.1rem !important;
+    font-weight: 700 !important;
+    color: #1C1917 !important;
+    letter-spacing: -0.3px;
+    margin-bottom: 0.1rem !important;
+}
+[data-testid="stSidebar"] .stCaption {
+    color: #8B6F5E !important;
+    font-size: 0.72rem !important;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+[data-testid="stSidebar"] hr {
+    border-color: #C9B5A3 !important;
+    margin: 1rem 0 !important;
+}
+[data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
+    font-size: 0.78rem !important;
+    font-weight: 600 !important;
+    color: #6B4C3B !important;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 0.6rem !important;
+}
+
+/* Document cards in sidebar */
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {
+    background: rgba(255,255,255,0.55);
+    border: 1px solid #D9C8B8;
+    border-radius: 8px;
+    padding: 0.6rem 0.75rem;
+    margin-bottom: 0.5rem !important;
+    font-size: 0.78rem;
+    line-height: 1.5;
+    color: #1C1917;
+}
+
+/* ── Tabs ── */
+[data-testid="stTabs"] [role="tablist"] {
+    border-bottom: 2px solid #E8D9CC !important;
+    gap: 0;
+}
+[data-testid="stTabs"] [role="tab"] {
+    font-size: 0.85rem !important;
+    font-weight: 500 !important;
+    color: #78584A !important;
+    padding: 0.6rem 1.2rem !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    border-bottom: 2px solid transparent !important;
+    margin-bottom: -2px;
+    transition: all 0.2s ease;
+}
+[data-testid="stTabs"] [role="tab"]:hover {
+    color: #C85C2A !important;
+}
+[data-testid="stTabs"] [role="tab"][aria-selected="true"] {
+    color: #C85C2A !important;
+    border-bottom: 2px solid #C85C2A !important;
+    font-weight: 600 !important;
+}
+
+/* ── Headings ── */
+h1 { font-size: 1.9rem !important; font-weight: 700 !important; color: #1C1917 !important; letter-spacing: -0.5px; }
+h2 { font-size: 1.3rem !important; font-weight: 600 !important; color: #1C1917 !important; }
+h3 { font-size: 1.05rem !important; font-weight: 600 !important; color: #3D2B1F !important; }
+
+/* ── Buttons ── */
+[data-testid="stButton"] > button {
+    background: #C85C2A !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    font-size: 0.85rem !important;
+    padding: 0.5rem 1.2rem !important;
+    transition: background 0.2s ease, transform 0.1s ease !important;
+    box-shadow: 0 2px 6px rgba(200,92,42,0.3) !important;
+}
+[data-testid="stButton"] > button:hover {
+    background: #A8491F !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 10px rgba(200,92,42,0.35) !important;
+}
+
+/* ── File uploader ── */
+[data-testid="stFileUploader"] {
+    background: rgba(255,255,255,0.6) !important;
+    border: 2px dashed #C9B5A3 !important;
+    border-radius: 12px !important;
+    padding: 1rem !important;
+    transition: border-color 0.2s ease;
+}
+[data-testid="stFileUploader"]:hover {
+    border-color: #C85C2A !important;
+}
+
+/* ── Metrics ── */
+[data-testid="stMetric"] {
+    background: rgba(255,255,255,0.65);
+    border: 1px solid #E2D0C0;
+    border-radius: 10px;
+    padding: 0.8rem 1rem !important;
+}
+[data-testid="stMetricLabel"] { font-size: 0.72rem !important; color: #8B6F5E !important; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+[data-testid="stMetricValue"] { font-size: 1.6rem !important; font-weight: 700 !important; color: #1C1917 !important; }
+
+/* ── Selectbox & Radio ── */
+[data-testid="stSelectbox"] > div > div {
+    border-radius: 8px !important;
+    border-color: #D4BFB0 !important;
+    background: rgba(255,255,255,0.7) !important;
+    font-size: 0.85rem !important;
+}
+[data-testid="stRadio"] label {
+    font-size: 0.83rem !important;
+    color: #3D2B1F !important;
+    font-weight: 500;
+}
+
+/* ── Info / Warning / Success boxes ── */
+[data-testid="stAlert"] {
+    border-radius: 10px !important;
+    border-width: 1px !important;
+    font-size: 0.85rem !important;
+}
+
+/* ── Expander ── */
+[data-testid="stExpander"] {
+    border: 1px solid #E2D0C0 !important;
+    border-radius: 10px !important;
+    background: rgba(255,255,255,0.5) !important;
+    margin-bottom: 0.6rem !important;
+}
+[data-testid="stExpander"] summary {
+    font-weight: 600 !important;
+    font-size: 0.88rem !important;
+    color: #1C1917 !important;
+    padding: 0.7rem 1rem !important;
+}
+
+/* ── Dataframe ── */
+[data-testid="stDataFrame"] {
+    border: 1px solid #E2D0C0 !important;
+    border-radius: 10px !important;
+    overflow: hidden !important;
+}
+
+/* ── Divider ── */
+hr { border-color: #E2D0C0 !important; margin: 1.5rem 0 !important; }
+
+/* ── Captions ── */
+.stCaption { color: #8B6F5E !important; font-size: 0.78rem !important; }
+
+/* ── Spinner text ── */
+[data-testid="stSpinner"] { color: #C85C2A !important; }
+
+/* ── Slider ── */
+[data-testid="stSlider"] [role="slider"] {
+    background: #C85C2A !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
 # ── Shared helpers ─────────────────────────────────────────────────────────────
 
 def api_get(path: str, params: dict = None) -> dict | list | None:

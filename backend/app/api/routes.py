@@ -18,7 +18,7 @@ from fastapi.responses import Response, StreamingResponse
 from backend.app.canonicalization.canonicalizer import canonicalize_fact
 from backend.app.canonicalization.embedder import embed_text
 from backend.app.config import DB_PATH, PROJECT_ROOT
-from backend.app.extraction.fact_extractor import extract_facts_from_chunk
+from backend.app.extraction.fact_extractor import extract_facts_from_chunks
 from backend.app.guardrails.evidence_verifier import verify_fact_evidence
 from backend.app.ingestion.chunker import chunk_document
 from backend.app.ingestion.pdf_parser import (
@@ -121,24 +121,19 @@ async def upload_document(file: UploadFile = File(...)):
     # Build chunk_text_map for verification
     chunk_text_map = {c.id: c.text for c in all_chunks}
 
-    # Extract facts per chunk concurrently
+    # Extract facts for all chunks in one batched call
     all_facts: list[Fact] = []
-    with ThreadPoolExecutor(max_workers=5) as executor:
-        chunk_facts_list = list(
-            executor.map(lambda c: extract_facts_from_chunk(c, file.filename), all_chunks)
-        )
-
-    for facts in chunk_facts_list:
-        for fact in facts:
-            # Verify evidence
-            fact = verify_fact_evidence(fact, chunk_text_map.get(fact.chunk_id, ""))
-            # Embed and insert
-            if fact.verification_status != "extraction_failed":
-                emb = embed_text(f"{fact.entity} {fact.attribute}: {fact.value}")
-            else:
-                emb = None
-            insert_fact(fact, emb, DB_PATH)
-            all_facts.append(fact)
+    chunk_facts_list = extract_facts_from_chunks(all_chunks, file.filename)
+    for fact in chunk_facts_list:
+        # Verify evidence
+        fact = verify_fact_evidence(fact, chunk_text_map.get(fact.chunk_id, ""))
+        # Embed and insert
+        if fact.verification_status != "extraction_failed":
+            emb = embed_text(f"{fact.entity} {fact.attribute}: {fact.value}")
+        else:
+            emb = None
+        insert_fact(fact, emb, DB_PATH)
+        all_facts.append(fact)
 
     # Canonicalize
     for fact in all_facts:

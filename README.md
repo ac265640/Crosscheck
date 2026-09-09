@@ -129,7 +129,7 @@ python eval/run_eval.py
 
 [![Crosscheck Demo Walkthrough](https://img.shields.io/badge/Demo%20Video-3%20Minutes%20Walkthrough-blue?style=for-the-badge&logo=youtube)](https://youtu.be/your-video-link-here)
 
-> 🔗 **Video Demo Link**: [3-Minute Video Demo Link](https://youtu.be/your-video-link-here) *(Demo video link — to be updated)*
+> 🔗 **Video Demo Link**: [3-Minute Video Demo Link](https://www.loom.com/share/b44c8dff718c4b6b9c3f4d31472c8c2e) 
 
 
 ---

@@ -328,7 +328,7 @@ live example of that classification.
 - **BAAI/bge-small-en-v1.5 (`sentence-transformers`)**: High-efficiency dense embeddings for semantic canonicalisation.
 - **Rapidfuzz**: High-performance C++ Levenshtein string matching for strict evidence verification.
 - **PyMuPDF & pdfplumber**: Visual and structural PDF layout decomposition.
-- **Google Antigravity**: Autonomous AI pair programmer used for architecture scaffolding and rapid iteration.
+
 
 ---
 

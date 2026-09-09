@@ -127,10 +127,25 @@ python eval/run_eval.py
 
 ## 2. Video Demo
 
-[![Crosscheck Demo Walkthrough](https://img.shields.io/badge/Demo%20Video-3%20Minutes%20Walkthrough-blue?style=for-the-badge&logo=youtube)](https://youtu.be/your-video-link-here)
+[![Demo Video](https://img.shields.io/badge/Demo%20Video-2m40s%20Walkthrough-blue?style=for-the-badge&logo=loom)](https://www.loom.com/share/b44c8dff718c4b6b9c3f4d31472c8c2e)
 
-> 🔗 **Video Demo Link**: [3-Minute Video Demo Link](https://www.loom.com/share/b44c8dff718c4b6b9c3f4d31472c8c2e) 
+> 🔗 **Video Demo Link**: [Watch the 3-Minute Walkthrough](https://www.loom.com/share/b44c8dff718c4b6b9c3f4d31472c8c2e)
 
+### What the Walkthrough Showcases
+
+The demo doesn't just replay the starter dataset — it live-uploads a **new,
+previously unseen document** (BlueDart Express Q2) to prove the pipeline
+generalizes beyond the six documents it was built and tested against.
+
+| Timestamp | Segment | What's Shown |
+|---|---|---|
+| 0:00 – 0:25 | **Live upload of an unseen document** | Delhivery files and BlueDart Q1 are already loaded; BlueDart Q2 is uploaded live on camera to prove the system works on documents it has never seen, with zero document-specific logic. |
+| 0:25 – 0:50 | **Fact grounding & bounding-box evidence** | Clicking an extracted fact (Boeing 757 fleet count) opens the source PDF page with the exact evidence text highlighted, verified by a Rapidfuzz match ≥ 85% against the source. |
+| 0:50 – 1:15 | **Case 1 — Corroboration** | BlueDart's Q1 and Q2 filings independently confirm the same fleet count (6 Boeing 757-200 aircraft) at 100% confidence; Delhivery's revenue is also corroborated across documents with automatic unit conversion (₹72,253 Million ↔ ₹7,225 Crore). |
+| 1:15 – 1:45 | **Case 2 — Genuine Contradiction** | Delhivery's FY24 Service EBITDA conflicts between its Annual Report (₹1,429 Million) and its earnings deck (₹941 Crore) for the same metric and year — flagged with exact page citations. Also shown: BlueDart correctly reports zero contradictions, proving the system doesn't manufacture conflicts where none exist. |
+| 1:45 – 2:05 | **Case 3 — Apparent Contradiction Reconciled by Context** | BlueDart's reported delivery locations grow from 55,400+ (Q1) to 56,400+ (Q2) — the system recognizes this as normal quarter-over-quarter growth rather than a data conflict, based on the differing reporting periods. |
+| 2:05 – 2:25 | **Case 4 — A Real Extraction Failure, Caught and Handled** | Filtering to "Needs Review," a fact from page 40 of Delhivery's prospectus is shown flagged as `UNVERIFIED`: the model merged separate bullet points into one line, the evidence quote didn't cleanly match the source text, scored below the 85 threshold, and was surfaced for review instead of silently trusted or discarded. |
+| 2:25 – 2:40 | **Reasoning Trace & Wrap-up** | A quick pass through the audit trace log showing the exact prompt, raw model output, latency, and confidence score behind these decisions — nothing here is a black box. |
 
 ---
 
